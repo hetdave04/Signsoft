@@ -524,7 +524,7 @@ async function render(){
   if(urlToken && !S.user){ await loadExternalSigning(urlToken); return; }
 
   if(!S.user){ app.innerHTML=renderLogin(); bindLoginEvents(); return; }
-  app.innerHTML=renderShell(await getPageContent());
+  app.innerHTML=await renderShell(await getPageContent());
   bindAppEvents();
   subscribeNotifications();
 }
@@ -1129,7 +1129,8 @@ async function loadProfile(){
 // =====================================================
 // SHELL / LAYOUT
 // =====================================================
-function renderShell(content){
+async function renderShell(content){
+  const notifPanelHtml=S.notifOpen?await renderNotifPanel():'';
   const p=S.profile;
   const isAdmin=p&&['super_admin','org_admin'].includes(p.role);
   const pageTitles={home:'Home','documents':'Documents','sign-yourself':'Sign Yourself','send-to-others':'Send to Others',audit:'Audit Trail',admin:'Admin Panel',settings:'Settings',delegate:'Substitute Signing'};
@@ -1164,7 +1165,7 @@ function renderShell(content){
           ${IC.bell}
           <div class="notif-count" id="notif-badge" style="display:${S.unreadCount>0?'flex':'none'}">${S.unreadCount}</div>
         </div>
-        ${S.notifOpen?await renderNotifPanel():''}
+        ${notifPanelHtml}
       </div>
     </div>
     <div id="page"${(S.page==='sign-yourself'&&S.syStep===2)||(S.page==='send-to-others'&&S.stoStep===3)?' class="no-pad"':''}>${content}</div>
@@ -1601,12 +1602,16 @@ function showAddDelegateModal(){
 // ADMIN
 // =====================================================
 async function renderAdmin(){
+  let adminContent='';
+  if(S.adminTab==='users') adminContent=await renderAdminUsers();
+  else if(S.adminTab==='roles') adminContent=renderAdminRoles();
+  else adminContent=await renderAdminOrg();
   return`<div class="tabs">
     <div class="tab${S.adminTab==='users'?' active':''}" data-atab="users">Users</div>
     <div class="tab${S.adminTab==='roles'?' active':''}" data-atab="roles">Roles & Permissions</div>
     <div class="tab${S.adminTab==='org'?' active':''}" data-atab="org">Organisation</div>
   </div>
-  ${S.adminTab==='users'?await renderAdminUsers():S.adminTab==='roles'?renderAdminRoles():await renderAdminOrg()}`;
+  ${adminContent}`;
 }
 
 async function renderAdminUsers(){
