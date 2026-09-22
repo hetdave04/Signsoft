@@ -2351,7 +2351,7 @@ function showInviteModal(){
         const tempPw='Welcome@123!';
         const{error:e2}=await SB.auth.signUp({email,password:tempPw,options:{data:{name,dept,role}}});
         if(e2) throw e2;
-        hideLoading();hideModal();toast(`User ${name} created (temp password: Welcome@123!)','success');render();
+        hideLoading();hideModal();toast(`User ${name} created (temp password: Welcome@123!)`,'success');render();
       }catch(e3){ hideLoading(); toast('Error: '+e3.message,'err'); }
     }
   };
