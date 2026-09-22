@@ -12,7 +12,7 @@ window.SIGNSOFT_CONFIG = {
 
   // Your Supabase project URL
   // Example: 'https://abcdefghijklm.supabase.co'
-  supabaseUrl: 'postgresql://postgres.sorijxpbowiptflpdzzj:HetD123404==@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres',
+  supabaseUrl: 'https://sorijxpbowiptflpdzzj.supabase.co',
 
   // Your Supabase anon/public key (safe to be public)
   // Looks like: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
