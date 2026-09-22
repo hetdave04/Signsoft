@@ -1,0 +1,2435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>SignSoft — Digital Document Signing</title>
+<meta name="description" content="Enterprise-grade digital document signing. Sign, send, and track documents securely.">
+<meta property="og:title" content="SignSoft — Digital Document Signing">
+<meta property="og:description" content="Sign, send, and track documents securely with OTP and Face ID verification.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✍️</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Dancing+Script:wght@600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+<script src="/config.js" onerror="console.log('No config.js found, using setup wizard')"></script>
+<style>
+:root{--navy:#0D1F3C;--blue:#2563EB;--blue-l:#DBEAFE;--bg:#F1F5F9;--surf:#fff;--bdr:#E2E8F0;
+  --txt:#0F172A;--mut:#64748B;--ok:#059669;--ok-l:#D1FAE5;--warn:#D97706;--warn-l:#FEF3C7;
+  --err:#DC2626;--err-l:#FEE2E2;--purple:#7C3AED;--sw:240px;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--txt);font-size:14px;line-height:1.5;}
+input,select,textarea,button{font-family:inherit;}
+#app-shell{display:flex;height:100vh;overflow:hidden;}
+#sidebar{width:var(--sw);background:var(--navy);display:flex;flex-direction:column;flex-shrink:0;}
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;}
+#topbar{background:var(--surf);border-bottom:1px solid var(--bdr);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+#page{flex:1;overflow-y:auto;padding:24px;}
+#page.no-pad{padding:0;}
+.s-logo{padding:18px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.08);}
+.s-logo-mark{width:32px;height:32px;background:var(--blue);border-radius:8px;display:flex;align-items:center;justify-content:center;}
+.s-logo-text{color:#fff;font-size:17px;font-weight:800;letter-spacing:-.5px;}
+.s-logo-sub{color:#475569;font-size:10px;letter-spacing:.8px;text-transform:uppercase;}
+.s-nav{flex:1;padding:10px 8px;overflow-y:auto;}
+.s-sec{font-size:10px;color:#475569;text-transform:uppercase;letter-spacing:.8px;padding:14px 8px 5px;font-weight:600;}
+.nav-item{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:6px;color:#94A3B8;cursor:pointer;font-size:13px;font-weight:500;margin-bottom:1px;transition:all .12s;}
+.nav-item:hover{background:rgba(255,255,255,.06);color:#CBD5E1;}
+.nav-item.active{background:rgba(37,99,235,.2);color:#60A5FA;}
+.nav-badge{margin-left:auto;background:var(--err);color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;font-weight:700;}
+.s-user{padding:12px;border-top:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px;cursor:pointer;}
+.s-user:hover{background:rgba(255,255,255,.04);}
+.u-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:12px;flex-shrink:0;}
+.u-name{color:#E2E8F0;font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.u-role{color:#475569;font-size:11px;}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:6px;font-size:13.5px;font-weight:500;cursor:pointer;border:none;transition:all .12s;white-space:nowrap;}
+.btn-primary{background:var(--blue);color:#fff;} .btn-primary:hover{background:#1D4ED8;}
+.btn-secondary{background:var(--surf);color:var(--txt);border:1px solid var(--bdr);} .btn-secondary:hover{background:var(--bg);}
+.btn-danger{background:var(--err);color:#fff;} .btn-danger:hover{background:#B91C1C;}
+.btn-ghost{background:transparent;color:var(--mut);border:1px solid transparent;} .btn-ghost:hover{background:var(--bg);color:var(--txt);}
+.btn-success{background:var(--ok);color:#fff;} .btn-success:hover{background:#047857;}
+.btn-purple{background:var(--purple);color:#fff;} .btn-purple:hover{background:#6D28D9;}
+.btn-sm{padding:5px 10px;font-size:12px;} .btn-lg{padding:11px 22px;font-size:15px;}
+.btn:disabled{opacity:.45;cursor:not-allowed;pointer-events:none;}
+.w100{width:100%;} .text-center{text-align:center;}
+.card{background:var(--surf);border:1px solid var(--bdr);border-radius:8px;}
+.card-hd{padding:16px 20px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;}
+.card-bd{padding:20px;} .card-title{font-size:14.5px;font-weight:600;}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
+.stat{background:var(--surf);border:1px solid var(--bdr);border-radius:8px;padding:16px 20px;}
+.stat-lbl{font-size:11.5px;color:var(--mut);font-weight:500;margin-bottom:6px;}
+.stat-val{font-size:28px;font-weight:800;color:var(--txt);line-height:1;}
+.stat-sub{font-size:11.5px;color:var(--mut);margin-top:6px;}
+table{width:100%;border-collapse:collapse;}
+thead th{font-size:11px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.5px;padding:10px 16px;border-bottom:1px solid var(--bdr);text-align:left;background:var(--bg);}
+tbody td{padding:12px 16px;border-bottom:1px solid #F8FAFC;font-size:13.5px;vertical-align:middle;}
+tbody tr:last-child td{border-bottom:none;} tbody tr:hover{background:#FAFCFF;}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:600;}
+.bg-ok{background:var(--ok-l);color:#065F46;} .bg-warn{background:var(--warn-l);color:#92400E;}
+.bg-err{background:var(--err-l);color:#991B1B;} .bg-blue{background:var(--blue-l);color:#1E40AF;}
+.bg-gray{background:#F1F5F9;color:var(--mut);} .bg-purple{background:#EDE9FE;color:#6D28D9;}
+.fg{margin-bottom:16px;} .fl{display:block;font-size:13px;font-weight:500;color:var(--txt);margin-bottom:6px;}
+.fi{width:100%;padding:8px 12px;border:1px solid var(--bdr);border-radius:6px;font-size:13.5px;background:var(--surf);color:var(--txt);transition:border-color .12s;}
+.fi:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.1);}
+select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:30px;}
+.fhint{font-size:12px;color:var(--mut);margin-top:4px;} .ferr{font-size:12px;color:var(--err);margin-top:4px;}
+.modal-ov{position:fixed;inset:0;background:rgba(15,23,42,.5);display:flex;align-items:center;justify-content:center;z-index:1000;padding:16px;}
+.modal{background:var(--surf);border-radius:12px;box-shadow:0 24px 80px rgba(0,0,0,.2);width:100%;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;}
+.modal-sm{max-width:440px;} .modal-md{max-width:580px;} .modal-lg{max-width:740px;}
+.modal-hd{padding:20px 24px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.modal-title{font-size:16px;font-weight:700;} .modal-bd{padding:24px;flex:1;overflow-y:auto;} .modal-ft{padding:16px 24px;border-top:1px solid var(--bdr);display:flex;justify-content:flex-end;gap:8px;flex-shrink:0;}
+.tabs{display:flex;border-bottom:1px solid var(--bdr);gap:0;margin-bottom:20px;}
+.tab{padding:10px 16px;font-size:13.5px;font-weight:500;color:var(--mut);cursor:pointer;border-bottom:2px solid transparent;transition:all .12s;}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue);}
+.steps{display:flex;align-items:center;gap:0;margin-bottom:28px;}
+.step{display:flex;align-items:center;gap:8px;}
+.step-n{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;}
+.step.done .step-n{background:var(--ok);color:#fff;} .step.active .step-n{background:var(--blue);color:#fff;} .step.pend .step-n{background:var(--bdr);color:var(--mut);}
+.step-lbl{font-size:12.5px;font-weight:500;color:var(--mut);} .step.active .step-lbl{color:var(--blue);} .step.done .step-lbl{color:var(--ok);}
+.step-line{flex:1;height:1px;background:var(--bdr);margin:0 10px;}
+.drop-zone{border:2px dashed var(--bdr);border-radius:10px;padding:48px;text-align:center;cursor:pointer;transition:all .2s;}
+.drop-zone:hover,.drop-zone.over{border-color:var(--blue);background:var(--blue-l);}
+.sign-layout{display:flex;height:calc(100vh - 56px);overflow:hidden;}
+.field-sidebar{width:200px;background:var(--surf);border-right:1px solid var(--bdr);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;}
+.field-sidebar-hd{padding:14px 14px 8px;font-size:11px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.6px;}
+.field-btn{display:flex;align-items:center;gap:8px;margin:0 10px 6px;padding:9px 10px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600;border:1.5px solid;transition:all .12s;user-select:none;}
+.field-btn:hover{opacity:.85;} .field-btn.placing{box-shadow:0 0 0 3px rgba(37,99,235,.25);}
+.doc-viewport{flex:1;background:#64748B;overflow:auto;padding:20px;display:flex;flex-direction:column;align-items:center;gap:14px;}
+.page-wrap{position:relative;box-shadow:0 4px 20px rgba(0,0,0,.2);background:#fff;cursor:crosshair;}
+.page-canvas{display:block;}
+.sig-field{position:absolute;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;cursor:pointer;user-select:none;}
+.sig-field .fd-del{position:absolute;top:-8px;right:-8px;width:17px;height:17px;background:var(--err);border-radius:50%;color:#fff;display:none;align-items:center;justify-content:center;font-size:13px;cursor:pointer;z-index:5;}
+.sig-field:hover .fd-del{display:flex;}
+.field-sidebar-actions{padding:12px;border-top:1px solid var(--bdr);margin-top:auto;}
+.timeline{padding-left:26px;position:relative;}
+.timeline::before{content:'';position:absolute;left:8px;top:0;bottom:0;width:2px;background:var(--bdr);}
+.tl-item{position:relative;margin-bottom:18px;}
+.tl-dot{position:absolute;left:-22px;top:4px;width:10px;height:10px;border-radius:50%;background:var(--blue);border:2px solid var(--surf);box-shadow:0 0 0 2px var(--blue);}
+.tl-dot.ok{background:var(--ok);box-shadow:0 0 0 2px var(--ok);} .tl-dot.sys{background:var(--mut);box-shadow:0 0 0 2px var(--mut);}
+.tl-time{font-size:11px;color:var(--mut);margin-bottom:2px;} .tl-action{font-size:13.5px;font-weight:600;} .tl-detail{font-size:12px;color:var(--mut);margin-top:2px;}
+.empty{text-align:center;padding:56px 24px;} .empty svg{color:var(--mut);opacity:.3;margin-bottom:14px;}
+.empty h3{font-size:16px;font-weight:600;margin-bottom:6px;} .empty p{color:var(--mut);font-size:13.5px;margin-bottom:20px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;} .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;}
+.flex{display:flex;} .fcol{flex-direction:column;} .aic{align-items:center;} .jcb{justify-content:space-between;} .jce{justify-content:flex-end;}
+.gap2{gap:8px;} .gap3{gap:12px;} .gap4{gap:16px;}
+.mb2{margin-bottom:8px;} .mb3{margin-bottom:12px;} .mb4{margin-bottom:16px;} .mb6{margin-bottom:24px;}
+.mt2{margin-top:8px;} .mt3{margin-top:12px;} .mt4{margin-top:16px;} .mt6{margin-top:24px;}
+.hidden{display:none!important;} .text-sm{font-size:12.5px;} .text-mut{color:var(--mut);} .fw6{font-weight:600;} .fw7{font-weight:700;}
+.divider{border:none;border-top:1px solid var(--bdr);margin:20px 0;}
+.avatar{border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-weight:700;flex-shrink:0;}
+.perm-grid{display:grid;grid-template-columns:1fr repeat(4,90px);border:1px solid var(--bdr);border-radius:8px;overflow:hidden;}
+.perm-cell{padding:10px 12px;border-bottom:1px solid var(--bdr);border-right:1px solid var(--bdr);font-size:12.5px;}
+.perm-cell:last-child{border-right:none;} .perm-hd{background:var(--bg);font-weight:600;font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.5px;}
+.perm-yes{color:var(--ok);text-align:center;} .perm-no{color:#CBD5E1;text-align:center;} .perm-part{color:var(--warn);text-align:center;}
+.rec-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bdr);}
+.rec-row:last-child{border-bottom:none;}
+#draw-canvas{display:block;border:1px solid var(--bdr);border-radius:7px;background:#fff;cursor:crosshair;width:100%;touch-action:none;}
+/* Notification bell */
+.notif-bell{position:relative;cursor:pointer;padding:6px;border-radius:6px;} .notif-bell:hover{background:var(--bg);}
+.notif-count{position:absolute;top:0;right:0;width:16px;height:16px;background:var(--err);border-radius:50%;color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;}
+.notif-panel{position:absolute;top:48px;right:0;width:340px;background:var(--surf);border:1px solid var(--bdr);border-radius:10px;box-shadow:0 8px 40px rgba(0,0,0,.12);z-index:200;overflow:hidden;}
+.notif-item{padding:12px 16px;border-bottom:1px solid var(--bdr);cursor:pointer;transition:background .1s;}
+.notif-item:hover{background:var(--bg);} .notif-item.unread{background:#EFF6FF;border-left:3px solid var(--blue);}
+/* Setup wizard */
+#setup-page{min-height:100vh;background:var(--navy);display:flex;align-items:center;justify-content:center;padding:20px;}
+.setup-card{background:var(--surf);border-radius:14px;width:100%;max-width:620px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.3);}
+.setup-hd{background:var(--blue);padding:28px 32px;color:#fff;}
+.setup-hd h1{font-size:22px;font-weight:800;margin-bottom:4px;} .setup-hd p{opacity:.85;font-size:13px;}
+.setup-step{display:flex;gap:16px;padding:20px 24px;border-bottom:1px solid var(--bdr);}
+.setup-step-num{width:28px;height:28px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;}
+.setup-step-body{flex:1;} .setup-step-title{font-weight:600;margin-bottom:6px;}
+.code-block{background:#1E293B;color:#E2E8F0;padding:12px 16px;border-radius:6px;font-family:monospace;font-size:12px;overflow-x:auto;margin:8px 0;position:relative;}
+.code-copy{position:absolute;top:8px;right:8px;background:rgba(255,255,255,.1);color:#E2E8F0;border:none;border-radius:4px;padding:3px 8px;font-size:11px;cursor:pointer;}
+.code-copy:hover{background:rgba(255,255,255,.2);}
+/* Login */
+#login-page{min-height:100vh;background:var(--navy);display:flex;align-items:center;justify-content:center;padding:20px;}
+.login-card{background:var(--surf);border-radius:14px;padding:40px;width:100%;max-width:400px;box-shadow:0 24px 80px rgba(0,0,0,.3);}
+/* Face OCR */
+#face-video{border-radius:8px;display:block;max-width:100%;}
+.face-overlay{position:relative;display:inline-block;}
+#face-canvas{position:absolute;top:0;left:0;}
+.liveness-bar{height:6px;background:var(--bdr);border-radius:3px;overflow:hidden;margin-top:8px;}
+.liveness-fill{height:100%;background:var(--ok);border-radius:3px;transition:width .3s;}
+/* Delegate */
+.del-card{border:1px solid var(--bdr);border-radius:8px;padding:16px;margin-bottom:12px;position:relative;}
+.del-active{border-color:var(--ok);background:var(--ok-l);}
+/* Deadline urgency */
+.urgency-red{color:var(--err);font-weight:600;} .urgency-amber{color:var(--warn);font-weight:600;} .urgency-green{color:var(--ok);}
+/* Toast */
+#toast-ct{position:fixed;bottom:20px;right:20px;z-index:2000;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
+.toast{background:var(--surf);border:1px solid var(--bdr);border-radius:8px;padding:12px 16px;box-shadow:0 4px 20px rgba(0,0,0,.1);display:flex;align-items:center;gap:10px;font-size:13.5px;animation:fadeIn .2s ease;min-width:260px;pointer-events:auto;}
+@keyframes fadeIn{from{opacity:0;transform:translateX(16px);}to{opacity:1;transform:none;}}
+.toast-ok{border-left:3px solid var(--ok);} .toast-err{border-left:3px solid var(--err);} .toast-info{border-left:3px solid var(--blue);}
+/* Loading */
+.spinner{width:20px;height:20px;border:2px solid var(--bdr);border-top-color:var(--blue);border-radius:50%;animation:spin .6s linear infinite;display:inline-block;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,.8);display:flex;align-items:center;justify-content:center;z-index:3000;flex-direction:column;gap:16px;}
+::-webkit-scrollbar{width:5px;height:5px;} ::-webkit-scrollbar-track{background:transparent;} ::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:3px;}
+</style>
+</head>
+<body>
+<div id="toast-ct"></div>
+<div id="modal-ct"></div>
+<div id="app"></div>
+
+<script>
+'use strict';
+// =====================================================
+// PDF.JS WORKER
+// =====================================================
+if(window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+
+// =====================================================
+// SUPABASE CLIENT
+// =====================================================
+let SB = null;
+const CFG_KEY = 'ss_config';
+
+function loadConfig(){
+  try{ return JSON.parse(localStorage.getItem(CFG_KEY)||'null'); }
+  catch(e){ return null; }
+}
+function saveConfig(cfg){ localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); }
+
+function initSupabase(url, key){
+  if(!url||!key) return false;
+  try{
+    SB = window.supabase.createClient(url, key, {
+      auth:{ persistSession:true, autoRefreshToken:true }
+    });
+    return true;
+  }catch(e){ console.error('Supabase init error:',e); return false; }
+}
+
+// =====================================================
+// APP STATE
+// =====================================================
+const S = {
+  user:null, profile:null, page:'login', params:{},
+  docs:[], notifs:[], unreadCount:0,
+  syStep:1, syFile:null, syName:'', syFields:[], syDocId:null, syPdf:null, syPages:0, syPlacing:null, syFilePath:null,
+  stoStep:1, stoFile:null, stoName:'', stoRecs:[], stoFields:[], stoDocId:null, stoPdf:null, stoPages:0, stoPlacing:null, stoActiveRec:0, stoFilePath:null, stoOrder:'sequential', stoSubj:'', stoMsg:'', stoDeadline:'',
+  auditDocId:null, adminTab:'users', settingsTab:'profile', docFilter:'all', docSearch:'',
+  notifOpen:false,
+  allUsers:[], allDelegations:[],
+  faceModelsLoaded:false, faceStream:null,
+  extToken:null, extDoc:null, extRecipient:null,
+};
+const PDF_CACHE = {};
+const REC_COLORS = ['#2563EB','#7C3AED','#059669','#D97706','#DB2777','#0891B2'];
+
+// =====================================================
+// UTILITIES
+// =====================================================
+const genId = ()=>Math.random().toString(36).substr(2,9);
+const fmtDate = iso=>iso?new Date(iso).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'-';
+const fmtDT   = iso=>iso?new Date(iso).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'}):'-';
+const timeAgo = iso=>{const d=Date.now()-new Date(iso).getTime(),m=Math.floor(d/60000);if(m<1)return'just now';if(m<60)return m+'m ago';const h=Math.floor(m/60);if(h<24)return h+'h ago';return Math.floor(h/24)+'d ago';};
+const initials = n=>n?n.trim().split(' ').map(w=>w[0]).join('').toUpperCase().substr(0,2):'?';
+const AVC = ['#2563EB','#7C3AED','#059669','#D97706','#0891B2','#DB2777'];
+const avColor = s=>AVC[(s||'').charCodeAt(0)%AVC.length];
+const esc = s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const deadlineUrgency = iso=>{if(!iso)return{cls:'',txt:''};const d=new Date(iso)-Date.now();const h=d/3600000;if(d<0)return{cls:'urgency-red',txt:'Overdue'};if(h<24)return{cls:'urgency-red',txt:'Due today'};if(h<72)return{cls:'urgency-amber',txt:`Due in ${Math.ceil(h/24)}d`};return{cls:'urgency-green',txt:`Due ${fmtDate(iso)}`};};
+
+function toast(msg,type='info'){
+  const tc=document.getElementById('toast-ct');
+  const el=document.createElement('div');
+  const ic={ok:'✓',err:'✕',info:'ℹ',success:'✓'};
+  const cs={ok:'var(--ok)',err:'var(--err)',info:'var(--blue)',success:'var(--ok)'};
+  const key=type==='success'?'ok':type;
+  el.className=`toast toast-${key==='ok'?'ok':key==='err'?'err':'info'}`;
+  el.innerHTML=`<span style="color:${cs[key]||cs.info};font-size:16px">${ic[key]||'ℹ'}</span><span>${esc(msg)}</span>`;
+  tc.appendChild(el); setTimeout(()=>el.remove(),3500);
+}
+function showModal(html){ document.getElementById('modal-ct').innerHTML=`<div class="modal-ov" id="moverlay">${html}</div>`; document.getElementById('moverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)hideModal();}); }
+function hideModal(){ document.getElementById('modal-ct').innerHTML=''; }
+function showLoading(msg='Loading…'){
+  let ov=document.getElementById('loading-ov');
+  if(!ov){ov=document.createElement('div');ov.id='loading-ov';ov.className='loading-overlay';document.body.appendChild(ov);}
+  ov.innerHTML=`<div class="spinner"></div><div style="color:var(--mut);font-size:14px">${esc(msg)}</div>`;
+}
+function hideLoading(){ const ov=document.getElementById('loading-ov');if(ov)ov.remove(); }
+
+function statusBadge(s){const m={draft:['bg-gray','Draft'],pending:['bg-warn','Pending'],signed:['bg-blue','Signed'],completed:['bg-ok','Completed'],declined:['bg-err','Declined'],expired:['bg-err','Expired'],voided:['bg-gray','Voided'],deleted:['bg-err','Deleted']};const[c,l]=m[s]||['bg-gray',s];return`<span class="badge ${c}">${l}</span>`;}
+function roleBadge(r){const m={super_admin:['bg-err','Super Admin'],org_admin:['bg-blue','Org Admin'],manager:['bg-warn','Manager'],user:['bg-gray','User'],read_only:['bg-gray','Read Only']};const[c,l]=m[r]||['bg-gray',r];return`<span class="badge ${c}">${l}</span>`;}
+function avatar(name,size=30,id=''){return`<div class="avatar" style="width:${size}px;height:${size}px;background:${avColor(id||name)};font-size:${Math.max(10,size*.36)}px">${initials(name)}</div>`;}
+
+// =====================================================
+// ICONS
+// =====================================================
+const IC={
+  home:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`,
+  file:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`,
+  pen:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>`,
+  send:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>`,
+  docs:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`,
+  audit:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`,
+  users:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+  settings:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`,
+  delegate:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>`,
+  bell:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>`,
+  plus:`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`,
+  search:`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`,
+  dl:`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`,
+  trash:`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`,
+  eye:`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`,
+  up:`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>`,
+  x:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
+  logout:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>`,
+  check:`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+  face:`<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/><circle cx="9" cy="7" r="1" fill="currentColor"/><circle cx="15" cy="7" r="1" fill="currentColor"/><path d="M9 11 q3 3 6 0"/></svg>`,
+  shield:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`,
+  clock:`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
+  link:`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>`,
+};
+
+// =====================================================
+// SUPABASE DB OPERATIONS
+// =====================================================
+async function dbQuery(table, options={}){
+  if(!SB) throw new Error('Not connected to Supabase');
+  let q = SB.from(table).select(options.select||'*');
+  if(options.filter) for(const[k,v] of Object.entries(options.filter)) q=q.eq(k,v);
+  if(options.order) q=q.order(options.order, {ascending:options.asc??false});
+  if(options.limit) q=q.limit(options.limit);
+  const{data,error}=await q;
+  if(error) throw error;
+  return data;
+}
+
+async function logAudit(docId, action, metadata={}){
+  if(!SB) return;
+  try{
+    await SB.from('audit_log').insert({
+      document_id:docId||null,
+      action,
+      actor_name: S.profile?.name || S.extRecipient?.name || 'System',
+      actor_id: S.user?.id || null,
+      ip_address: 'client',
+      device: navigator.userAgent.substring(0,120),
+      metadata
+    });
+  }catch(e){ console.warn('Audit log error:',e); }
+}
+
+async function createNotification(userId, title, message, type='info', docId=null, link=null){
+  if(!SB) return;
+  try{
+    await SB.from('notifications').insert({user_id:userId, title, message, type, document_id:docId, link});
+  }catch(e){ console.warn('Notif error:',e); }
+}
+
+// =====================================================
+// EMAIL
+// =====================================================
+async function sendEmail(to, subject, html, type='info'){
+  const cfg=loadConfig();
+  if(!cfg?.supabaseUrl) return {success:false, error:'Not configured'};
+  try{
+    const {data,error}=await SB.functions.invoke('send-email',{body:{to,subject,html,type}});
+    if(error) throw error;
+    return data;
+  }catch(e){ console.warn('Email error:',e); return {success:false, error:e.message}; }
+}
+
+async function sendOTPEmail(recipientId, name, email, otpCode, docName){
+  const html=`<p>Hi <b>${esc(name)}</b>,</p>
+  <p>You have been invited to sign the document: <b>${esc(docName)}</b></p>
+  <div class="otp-box"><div class="otp-code">${otpCode}</div><div class="otp-note">This code expires in 10 minutes. Do not share it.</div></div>
+  <p>Enter this code on the signing page to verify your identity and proceed to sign.</p>`;
+  return sendEmail(email, `Your SignSoft Verification Code: ${otpCode}`, html, 'otp');
+}
+
+async function sendSigningInvitation(recipientId, name, email, docName, token, customMsg=''){
+  const appUrl = window.location.href.split('?')[0];
+  const signingUrl = `${appUrl}?token=${token}`;
+  const html=`<p>Hi <b>${esc(name)}</b>,</p>
+  <p>${customMsg?esc(customMsg)+`</p><p>`:''}You have been invited to review and sign the document: <b>${esc(docName)}</b></p>
+  <p style="text-align:center;margin:24px 0"><a href="${signingUrl}" class="btn">Sign Document →</a></p>
+  <p>Or copy this link:<br><code style="background:#F1F5F9;padding:4px 8px;border-radius:4px;font-size:12px">${signingUrl}</code></p>
+  <p style="color:#6B7280;font-size:13px">This link is unique to you. Do not share it with others.</p>`;
+  return sendEmail(email, `Action Required: Please sign "${docName}"`, html, 'signing');
+}
+
+async function sendCompletionEmail(uploaderEmail, uploaderName, docName, signerCount){
+  const html=`<p>Hi <b>${esc(uploaderName)}</b>,</p>
+  <p>Great news! All <b>${signerCount}</b> signer${signerCount>1?'s have':'has'} signed the document: <b>${esc(docName)}</b>.</p>
+  <p>The document is now complete. You can log in to SignSoft to download the signed copy.</p>`;
+  return sendEmail(uploaderEmail, `✅ Document Complete: "${docName}"`, html, 'success');
+}
+
+async function sendDeclineEmail(uploaderEmail, uploaderName, docName, declinedBy, reason){
+  const html=`<p>Hi <b>${esc(uploaderName)}</b>,</p>
+  <p><b>${esc(declinedBy)}</b> has declined to sign the document: <b>${esc(docName)}</b>.</p>
+  ${reason?`<p>Reason given: <i>"${esc(reason)}"</i></p>`:''}
+  <p>You may wish to follow up directly or upload a revised version.</p>`;
+  return sendEmail(uploaderEmail, `⚠ Signing Declined: "${docName}"`, html, 'warning');
+}
+
+// =====================================================
+// FACE / OCR VERIFICATION
+// =====================================================
+const FACE_MODELS_URL = 'https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights';
+let faceDetectInterval = null;
+
+async function loadFaceModels(){
+  if(S.faceModelsLoaded) return true;
+  if(!window.faceapi){ toast('Face API library not loaded','err'); return false; }
+  try{
+    showLoading('Loading face detection models…');
+    await Promise.all([
+      faceapi.nets.tinyFaceDetector.loadFromUri(FACE_MODELS_URL),
+      faceapi.nets.faceLandmark68Net.loadFromUri(FACE_MODELS_URL),
+      faceapi.nets.faceExpressionNet.loadFromUri(FACE_MODELS_URL),
+    ]);
+    S.faceModelsLoaded = true;
+    hideLoading();
+    return true;
+  }catch(e){
+    hideLoading();
+    toast('Face models failed to load: '+e.message,'err');
+    console.error('Face model load error:',e);
+    return false;
+  }
+}
+
+async function startCamera(){
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({video:{width:480,height:360,facingMode:'user'},audio:false});
+    S.faceStream = stream;
+    return stream;
+  }catch(e){
+    toast('Camera access denied: '+e.message,'err');
+    return null;
+  }
+}
+
+function stopCamera(){
+  if(S.faceStream){ S.faceStream.getTracks().forEach(t=>t.stop()); S.faceStream=null; }
+  if(faceDetectInterval){ clearInterval(faceDetectInterval); faceDetectInterval=null; }
+}
+
+function showFaceVerificationModal(recipientId, onPass){
+  showModal(`<div class="modal modal-md">
+    <div class="modal-hd"><span class="modal-title">${IC.face} Identity Verification</span></div>
+    <div class="modal-bd">
+      <p class="text-sm text-mut mb4">Look directly at the camera. Keep your face within the frame. This verifies your identity before signing.</p>
+      <div class="face-overlay" style="width:100%;text-align:center">
+        <video id="face-video" width="440" height="330" autoplay muted playsinline style="border-radius:8px;background:#1E293B;display:block;margin:0 auto"></video>
+        <canvas id="face-canvas" width="440" height="330" style="position:absolute;top:0;left:50%;transform:translateX(-50%)"></canvas>
+      </div>
+      <div id="face-status" style="margin-top:12px;text-align:center">
+        <div class="spinner" style="margin:0 auto 8px"></div>
+        <div class="text-sm text-mut" id="face-msg">Starting camera…</div>
+      </div>
+      <div style="margin-top:10px">
+        <div class="liveness-bar"><div class="liveness-fill" id="liveness-fill" style="width:0%"></div></div>
+        <div class="text-sm text-mut mt2 text-center" id="liveness-txt">Detecting face…</div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-secondary" id="face-skip">Skip Verification</button>
+      <button class="btn btn-primary hidden" id="face-pass">Continue →</button>
+    </div>
+  </div>`);
+
+  (async()=>{
+    const modelsOk = await loadFaceModels();
+    if(!modelsOk){ document.getElementById('face-msg').textContent='Face models unavailable — skip to continue'; return; }
+    const stream = await startCamera();
+    if(!stream){ document.getElementById('face-msg').textContent='Camera unavailable — skip to continue'; return; }
+    const video = document.getElementById('face-video');
+    if(!video){ stopCamera(); return; }
+    video.srcObject = stream;
+    await new Promise(r=>video.addEventListener('loadedmetadata',r,{once:true}));
+    video.play();
+
+    const canvas = document.getElementById('face-canvas');
+    const ctx = canvas.getContext('2d');
+    let faceFrames=0, confidence=0;
+
+    faceDetectInterval = setInterval(async()=>{
+      const video2=document.getElementById('face-video');
+      if(!video2){ clearInterval(faceDetectInterval); return; }
+      try{
+        const detection = await faceapi
+          .detectSingleFace(video2, new faceapi.TinyFaceDetectorOptions({inputSize:320,scoreThreshold:0.5}))
+          .withFaceLandmarks().withFaceExpressions();
+
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        if(detection){
+          const{x,y,width,height}=detection.detection.box;
+          const scaleX=canvas.width/video2.videoWidth, scaleY=canvas.height/video2.videoHeight;
+          ctx.strokeStyle='#059669'; ctx.lineWidth=2; ctx.strokeRect(x*scaleX,y*scaleY,width*scaleX,height*scaleY);
+          ctx.fillStyle='rgba(5,150,105,.1)'; ctx.fillRect(x*scaleX,y*scaleY,width*scaleX,height*scaleY);
+          faceFrames++;
+          confidence = Math.min(100, faceFrames*4);
+          const lf=document.getElementById('liveness-fill');
+          const lt=document.getElementById('liveness-txt');
+          const fm=document.getElementById('face-msg');
+          if(lf) lf.style.width=confidence+'%';
+          if(fm) fm.textContent=`Face detected — hold still (${confidence}%)`;
+          if(lt) lt.textContent=confidence>=100?'✓ Liveness verified!':confidence>=50?'Looks good, keep going…':'Detecting…';
+          if(confidence>=100){
+            clearInterval(faceDetectInterval);
+            ctx.strokeStyle='#059669'; ctx.lineWidth=3; ctx.strokeRect(x*scaleX,y*scaleY,width*scaleX,height*scaleY);
+            const fp=document.getElementById('face-pass');
+            if(fp) fp.classList.remove('hidden');
+            if(fm) fm.textContent='✅ Identity verified!';
+            // Auto-proceed after 1.5s
+            setTimeout(()=>{
+              stopCamera(); hideModal();
+              onPass({passed:true, confidence:detection.detection.score, expressions:detection.expressions});
+            },1500);
+          }
+        }else{
+          faceFrames=Math.max(0,faceFrames-1);
+          confidence=Math.max(0,confidence-2);
+          const lf=document.getElementById('liveness-fill');
+          if(lf) lf.style.width=Math.max(0,confidence)+'%';
+          const fm=document.getElementById('face-msg');
+          if(fm) fm.textContent='No face detected — look at the camera';
+        }
+      }catch(e){ console.warn('Detection frame error:',e); }
+    },300);
+
+    const skipBtn=document.getElementById('face-skip');
+    if(skipBtn) skipBtn.onclick=()=>{ stopCamera(); hideModal(); onPass({passed:false,confidence:0,skipped:true}); };
+    const passBtn=document.getElementById('face-pass');
+    if(passBtn) passBtn.onclick=()=>{ stopCamera(); hideModal(); onPass({passed:true,confidence:1,manual:true}); };
+  })();
+}
+
+// =====================================================
+// NAVIGATION
+// =====================================================
+function nav(page, params={}){
+  if(page!=='sign-yourself'&&page!=='send-to-others'){
+    S.syStep=1;S.syFile=null;S.syName='';S.syFields=[];S.syDocId=null;S.syPdf=null;S.syPlacing=null;
+    S.stoStep=1;S.stoFile=null;S.stoName='';S.stoRecs=[];S.stoFields=[];S.stoDocId=null;S.stoPdf=null;S.stoPlacing=null;S.stoSubj='';S.stoMsg='';S.stoDeadline='';
+  }
+  S.page=page; S.params=params; S.notifOpen=false;
+  render();
+}
+
+async function render(){
+  const app=document.getElementById('app');
+  const cfg=loadConfig();
+  if(!cfg?.supabaseUrl||!cfg?.supabaseKey){ app.innerHTML=renderSetup(); bindSetupEvents(); return; }
+  if(!SB){ initSupabase(cfg.supabaseUrl,cfg.supabaseKey); }
+
+  // Check external signing token first
+  const urlToken=new URLSearchParams(window.location.search).get('token');
+  if(urlToken && !S.user){ await loadExternalSigning(urlToken); return; }
+
+  if(!S.user){ app.innerHTML=renderLogin(); bindLoginEvents(); return; }
+  app.innerHTML=renderShell(await getPageContent());
+  bindAppEvents();
+  subscribeNotifications();
+}
+
+// =====================================================
+// EXTERNAL SIGNING (token-based, no login needed)
+// =====================================================
+async function loadExternalSigning(token){
+  const app=document.getElementById('app');
+  app.innerHTML=`<div style="min-height:100vh;background:var(--bg);display:flex;align-items:center;justify-content:center"><div class="spinner"></div></div>`;
+  try{
+    // Fetch recipient by token (anon access via RLS policy)
+    const{data:rec,error:re}=await SB.from('signing_recipients').select('*').eq('signing_token',token).single();
+    if(re||!rec) throw new Error('Invalid or expired signing link');
+    if(rec.status==='signed') throw new Error('You have already signed this document');
+    const{data:doc,error:de}=await SB.from('documents').select('*').eq('id',rec.document_id).single();
+    if(de||!doc) throw new Error('Document not found');
+    S.extToken=token; S.extDoc=doc; S.extRecipient=rec;
+    app.innerHTML=renderExternalSigning(doc,rec);
+    bindExternalSigningEvents(doc,rec);
+  }catch(e){
+    app.innerHTML=`<div style="min-height:100vh;background:var(--navy);display:flex;align-items:center;justify-content:center">
+    <div class="login-card" style="text-align:center"><div style="font-size:48px;margin-bottom:16px">❌</div>
+    <h2 class="fw7 mb3">${esc(e.message)}</h2>
+    <p class="text-mut text-sm">Contact the document sender if you believe this is an error.</p></div></div>`;
+  }
+}
+
+function renderExternalSigning(doc, rec){
+  return`<div style="min-height:100vh;background:var(--bg)">
+  <div style="background:var(--navy);padding:16px 24px;display:flex;align-items:center;gap:12px">
+    <div style="width:32px;height:32px;background:var(--blue);border-radius:8px;display:flex;align-items:center;justify-content:center">${IC.shield.replace('stroke="currentColor"','stroke="#fff"')}</div>
+    <span style="color:#fff;font-size:17px;font-weight:800">SignSoft</span>
+    <span style="color:#64748B;font-size:13px;margin-left:8px">Secure Document Signing</span>
+  </div>
+  <div style="max-width:640px;margin:32px auto;padding:0 16px" id="ext-content">
+    <div class="card mb4">
+      <div class="card-hd"><span class="card-title">You're invited to sign</span></div>
+      <div class="card-bd">
+        <div class="flex gap3 aic mb4">
+          <div style="width:40px;height:40px;background:var(--blue);border-radius:8px;display:flex;align-items:center;justify-content:center">${IC.file.replace('stroke="currentColor"','stroke="#fff"')}</div>
+          <div><div class="fw6" style="font-size:15px">${esc(doc.name)}</div><div class="text-sm text-mut">${doc.pages} page${doc.pages>1?'s':''}</div></div>
+        </div>
+        <div style="padding:14px;background:var(--bg);border-radius:8px" class="mb4">
+          <div class="fw6 mb2">Signing as:</div>
+          <div class="flex gap2 aic">${avatar(rec.name,32,rec.id)}<div><div class="fw6">${esc(rec.name)}</div><div class="text-sm text-mut">${esc(rec.email)}</div></div></div>
+        </div>
+        ${rec.verify_method!=='none'?`<div id="ext-verify-section">
+          ${rec.verify_method==='otp_ocr'?`<div style="padding:14px;background:#EDE9FE;border-radius:8px;margin-bottom:16px">
+            <div class="fw6 mb2">${IC.face} Step 1: Identity Verification</div>
+            <p class="text-sm text-mut mb3">We need to verify your identity via webcam before you can proceed.</p>
+            <button class="btn btn-purple" id="ext-start-ocr">Start Camera Verification</button>
+          </div>`:''}
+          <div id="ext-otp-section"${rec.verify_method==='otp_ocr'?' style="display:none"':''}>
+            <div class="fg"><label class="fl">${IC.shield} Enter your OTP</label>
+              <div style="display:flex;gap:8px">
+                <input class="fi" id="ext-otp-input" maxlength="6" placeholder="000000" style="font-size:22px;letter-spacing:6px;text-align:center;flex:1">
+                <button class="btn btn-secondary" id="ext-resend-otp">Resend</button>
+              </div>
+              <div class="fhint">Check your email for the 6-digit code. Attempts remaining: <span id="ext-attempts">3</span></div>
+              <div id="ext-otp-err" class="ferr hidden"></div>
+            </div>
+            <button class="btn btn-primary w100" id="ext-verify-otp">Verify Identity →</button>
+          </div>
+        </div>`:
+        `<button class="btn btn-primary w100" id="ext-proceed">Proceed to Sign →</button>`}
+      </div>
+    </div>
+    <div id="ext-signing-area" class="hidden">
+      <div class="card mb4">
+        <div class="card-hd"><span class="card-title">Sign the Document</span></div>
+        <div class="card-bd">
+          <p class="text-sm text-mut mb4">Fill in the highlighted fields assigned to you, then click "Complete Signing".</p>
+          <div id="ext-doc-pages" style="background:#64748B;border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:12px;align-items:center"></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px">
+        <button class="btn btn-danger" id="ext-decline">✕ Decline to Sign</button>
+        <button class="btn btn-success flex-1" id="ext-complete" style="justify-content:center">✓ Complete Signing</button>
+      </div>
+    </div>
+  </div></div>`;
+}
+
+function bindExternalSigningEvents(doc, rec){
+  let ocrPassed = rec.verify_method!=='otp_ocr';
+  let otpAttempts = rec.otp_attempts||0;
+
+  const startOcr=document.getElementById('ext-start-ocr');
+  if(startOcr) startOcr.onclick=()=>{
+    showFaceVerificationModal(rec.id, async(result)=>{
+      ocrPassed=result.passed||result.skipped;
+      await SB.from('signing_recipients').update({ocr_passed:result.passed,ocr_confidence:result.confidence}).eq('id',rec.id);
+      await logAudit(doc.id,`OCR verification ${result.passed?'passed':'skipped'} by ${rec.name}`,{confidence:result.confidence});
+      document.getElementById('ext-otp-section').style.display='block';
+      document.getElementById('ext-start-ocr').closest('div').style.display='none';
+      // Send OTP
+      await generateAndSendOTP(rec.id, rec.name, rec.email, doc.name);
+    });
+  };
+
+  // Auto-send OTP if method is just 'otp'
+  if(rec.verify_method==='otp') generateAndSendOTP(rec.id, rec.name, rec.email, doc.name);
+
+  const resendOtp=document.getElementById('ext-resend-otp');
+  if(resendOtp) resendOtp.onclick=()=>generateAndSendOTP(rec.id, rec.name, rec.email, doc.name);
+
+  const verifyOtp=document.getElementById('ext-verify-otp');
+  if(verifyOtp) verifyOtp.onclick=async()=>{
+    const entered=(document.getElementById('ext-otp-input').value||'').trim();
+    const errEl=document.getElementById('ext-otp-err');
+    // Fetch fresh OTP from DB
+    const{data:freshRec}=await SB.from('signing_recipients').select('otp_code,otp_expires_at,otp_attempts').eq('id',rec.id).single();
+    if(!freshRec){ errEl.textContent='Error fetching OTP data'; errEl.classList.remove('hidden'); return; }
+    if(new Date(freshRec.otp_expires_at)<new Date()){ errEl.textContent='OTP expired. Click Resend.'; errEl.classList.remove('hidden'); return; }
+    if(entered!==freshRec.otp_code){
+      otpAttempts++;
+      await SB.from('signing_recipients').update({otp_attempts:otpAttempts}).eq('id',rec.id);
+      await logAudit(doc.id,`OTP verification failed by ${rec.name} (attempt ${otpAttempts})`);
+      if(otpAttempts>=3){ errEl.textContent='Too many attempts. Session locked. Contact the sender.'; errEl.classList.remove('hidden'); document.getElementById('ext-verify-otp').disabled=true; return; }
+      document.getElementById('ext-attempts').textContent=3-otpAttempts;
+      errEl.textContent='Incorrect code. Try again.'; errEl.classList.remove('hidden'); return;
+    }
+    errEl.classList.add('hidden');
+    await SB.from('signing_recipients').update({status:'viewed',otp_attempts:otpAttempts}).eq('id',rec.id);
+    await logAudit(doc.id,`OTP verified by ${rec.name}`);
+    // Update rec view + audit
+    await SB.from('audit_log').insert({document_id:doc.id,action:`Document viewed by ${rec.name}`,actor_name:rec.name,ip_address:'external',device:navigator.userAgent.substr(0,100)});
+    // Show signing area
+    document.getElementById('ext-verify-section').style.display='none';
+    document.getElementById('ext-signing-area').classList.remove('hidden');
+    await loadExternalDocumentCanvas(doc, rec);
+  };
+
+  const proceedBtn=document.getElementById('ext-proceed');
+  if(proceedBtn) proceedBtn.onclick=async()=>{
+    document.getElementById('ext-proceed').style.display='none';
+    document.getElementById('ext-signing-area').classList.remove('hidden');
+    await loadExternalDocumentCanvas(doc, rec);
+  };
+}
+
+async function generateAndSendOTP(recipientId, name, email, docName){
+  const otp=Math.floor(100000+Math.random()*900000).toString();
+  const expires=new Date(Date.now()+600000).toISOString(); // 10 min
+  await SB.from('signing_recipients').update({otp_code:otp, otp_expires_at:expires, otp_attempts:0}).eq('id',recipientId);
+  const result=await sendOTPEmail(recipientId, name, email, otp, docName);
+  if(result?.success) toast(`OTP sent to ${email}`,'success');
+  else toast(`Email not configured — OTP: ${otp}`,'info'); // Show on screen if no email
+}
+
+async function loadExternalDocumentCanvas(doc, rec){
+  const container=document.getElementById('ext-doc-pages');
+  if(!container) return;
+  container.innerHTML=`<div style="color:#fff;font-size:13px">Loading document…</div>`;
+  let fields=[];
+  try{ fields=typeof doc.signing_fields==='string'?JSON.parse(doc.signing_fields):doc.signing_fields||[]; }catch(e){ fields=[]; }
+  const myFields=fields.filter(f=>f.recipientId===rec.id||f.recipientIdx===rec.recipient_idx);
+
+  if(!PDF_CACHE['ext']&&doc.file_path){
+    try{
+      const{data:{signedUrl}}=await SB.storage.from('documents').createSignedUrl(doc.file_path,3600);
+      const resp=await fetch(signedUrl);
+      PDF_CACHE['ext']=await resp.arrayBuffer();
+    }catch(e){ container.innerHTML=`<div style="color:#fff;padding:20px">Could not load document file.</div>`; return; }
+  }
+  if(!PDF_CACHE['ext']){ container.innerHTML=`<div style="color:#fff;padding:20px">No document file found.</div>`; return; }
+
+  const pdf=await pdfjsLib.getDocument({data:new Uint8Array(PDF_CACHE['ext'])}).promise;
+  container.innerHTML='';
+  for(let p=1;p<=pdf.numPages;p++){
+    const page=await pdf.getPage(p);
+    const vp=page.getViewport({scale:1.2});
+    const wrap=document.createElement('div');
+    wrap.id=`ext-pw-${p}`;
+    wrap.style.cssText=`position:relative;width:${vp.width}px;height:${vp.height}px;box-shadow:0 4px 20px rgba(0,0,0,.3);`;
+    const canvas=document.createElement('canvas');
+    canvas.width=vp.width; canvas.height=vp.height; canvas.style.display='block';
+    wrap.appendChild(canvas);
+    container.appendChild(wrap);
+    const ctx=canvas.getContext('2d');
+    await page.render({canvasContext:ctx,viewport:vp}).promise;
+    // Add my fields for this page
+    myFields.filter(f=>f.page===p).forEach(f=>{
+      const el=document.createElement('div');
+      el.id=`extf-${f.id}`;
+      el.style.cssText=`position:absolute;left:${f.x*(1.2/1.5)}px;top:${f.y*(1.2/1.5)}px;width:${f.w*(1.2/1.5)}px;height:${f.h*(1.2/1.5)}px;border:2px dashed #2563EB;background:rgba(37,99,235,.1);border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#2563EB;font-family:Inter,sans-serif;`;
+      const labels={signature:'✍ Sign here',initials:'Initials',date:'📅 Date',text:'Text',name:'Name'};
+      el.textContent=labels[f.type]||f.type;
+      el.addEventListener('click',()=>openExtFillModal(f,el,myFields,rec));
+      wrap.appendChild(el);
+    });
+  }
+
+  // Complete + Decline buttons
+  const completeBtn=document.getElementById('ext-complete');
+  const declineBtn=document.getElementById('ext-decline');
+  if(completeBtn) completeBtn.onclick=()=>completeExternalSigning(doc,rec,myFields,pdf);
+  if(declineBtn) declineBtn.onclick=()=>showDeclineModal(doc,rec);
+}
+
+function openExtFillModal(field, el, allFields, rec){
+  const isDrawable=field.type==='signature'||field.type==='initials';
+  showModal(`<div class="modal modal-md">
+    <div class="modal-hd"><span class="modal-title">${field.type==='signature'?'Sign Here':field.type==='initials'?'Add Initials':field.type==='date'?'Set Date':field.type==='name'?'Your Name':'Enter Text'}</span>
+    <button class="btn btn-ghost btn-sm" data-action="close-modal">${IC.x}</button></div>
+    <div class="modal-bd">
+    ${isDrawable?`<div class="tabs" id="ext-fill-tabs"><div class="tab active" data-etab="draw">Draw</div><div class="tab" data-etab="type">Type</div></div>
+      <div id="etab-draw"><canvas id="draw-canvas" width="500" height="150" style="touch-action:none"></canvas>
+        <button class="btn btn-ghost btn-sm mt2" id="ext-clear">Clear</button></div>
+      <div id="etab-type" class="hidden"><div class="fg"><label class="fl">Type your ${field.type}</label>
+        <input class="fi" id="ext-type-txt" placeholder="${rec.name}" style="font-family:'Dancing Script',cursive;font-size:26px;height:64px"></div></div>`:''}
+    ${field.type==='date'?`<div class="fg"><label class="fl">Date</label><input type="date" class="fi" id="ext-date-val" value="${new Date().toISOString().slice(0,10)}"></div>`:''}
+    ${field.type==='text'||field.type==='name'?`<div class="fg"><label class="fl">${field.type==='name'?'Full Name':'Text'}</label><input class="fi" id="ext-text-val" placeholder="${field.type==='name'?rec.name:'Enter text…'}" value="${field.type==='name'?rec.name:''}"></div>`:''}
+    </div>
+    <div class="modal-ft"><button class="btn btn-secondary" data-action="close-modal">Cancel</button><button class="btn btn-primary" id="ext-fill-confirm">Apply</button></div>
+  </div>`);
+
+  if(isDrawable){
+    const canvas=document.getElementById('draw-canvas');
+    const ctx=canvas.getContext('2d');
+    ctx.strokeStyle='#0F172A'; ctx.lineWidth=2.5; ctx.lineCap='round'; ctx.lineJoin='round';
+    let drawing=false,lx,ly;
+    const pos=e=>{const r=canvas.getBoundingClientRect();return[(e.touches?e.touches[0].clientX:e.clientX-r.left)*(canvas.width/r.width),(e.touches?e.touches[0].clientY:e.clientY-r.top)*(canvas.height/r.height)];};
+    canvas.addEventListener('mousedown',e=>{drawing=true;[lx,ly]=pos(e);});
+    canvas.addEventListener('mousemove',e=>{if(!drawing)return;const[x,y]=pos(e);ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(x,y);ctx.stroke();[lx,ly]=[x,y];});
+    canvas.addEventListener('mouseup',()=>drawing=false); canvas.addEventListener('mouseleave',()=>drawing=false);
+    canvas.addEventListener('touchstart',e=>{e.preventDefault();drawing=true;[lx,ly]=pos(e);},{passive:false});
+    canvas.addEventListener('touchmove',e=>{e.preventDefault();if(!drawing)return;const[x,y]=pos(e);ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(x,y);ctx.stroke();[lx,ly]=[x,y];},{passive:false});
+    canvas.addEventListener('touchend',()=>drawing=false);
+    document.getElementById('ext-clear').onclick=()=>ctx.clearRect(0,0,canvas.width,canvas.height);
+    let activeTab='draw';
+    document.querySelectorAll('#ext-fill-tabs .tab').forEach(t=>t.addEventListener('click',()=>{
+      document.querySelectorAll('#ext-fill-tabs .tab').forEach(x=>x.classList.remove('active')); t.classList.add('active');
+      activeTab=t.dataset.etab;
+      document.getElementById('etab-draw').classList.toggle('hidden',activeTab!=='draw');
+      document.getElementById('etab-type').classList.toggle('hidden',activeTab!=='type');
+    }));
+    document.getElementById('ext-fill-confirm').onclick=()=>{
+      let val;
+      if(activeTab==='draw'){
+        const id=ctx.getImageData(0,0,canvas.width,canvas.height);
+        if(!id.data.some((v,i)=>i%4===3&&v>10)){toast('Please draw first','err');return;}
+        val=canvas.toDataURL();
+      }else{
+        val=(document.getElementById('ext-type-txt').value||'').trim();
+        if(!val){toast('Enter text','err');return;}
+        const oc=document.createElement('canvas');oc.width=field.w*2;oc.height=field.h*2;
+        const oc2=oc.getContext('2d');oc2.font=`${field.h*1.1}px "Dancing Script",cursive`;oc2.fillStyle='#0F172A';oc2.textBaseline='middle';
+        oc2.fillText(val,4,field.h); val=oc.toDataURL();
+      }
+      field.value=val; el.style.borderStyle='solid'; el.style.borderColor='#059669'; el.style.background='rgba(5,150,105,.1)';
+      el.innerHTML=`<img src="${val}" style="max-width:100%;max-height:100%;object-fit:contain">`;
+      hideModal();
+    };
+  }else if(field.type==='date'){
+    document.getElementById('ext-fill-confirm').onclick=()=>{
+      const v=document.getElementById('ext-date-val').value;
+      if(!v){toast('Pick a date','err');return;}
+      field.value=new Date(v).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+      el.textContent=field.value; el.style.borderStyle='solid'; el.style.borderColor='#059669'; hideModal();
+    };
+  }else{
+    document.getElementById('ext-fill-confirm').onclick=()=>{
+      const v=(document.getElementById('ext-text-val').value||'').trim();
+      if(!v){toast('Enter text','err');return;}
+      field.value=v; el.textContent=v; el.style.borderStyle='solid'; el.style.borderColor='#059669'; hideModal();
+    };
+  }
+}
+
+function showDeclineModal(doc,rec){
+  showModal(`<div class="modal modal-sm">
+    <div class="modal-hd"><span class="modal-title">Decline to Sign</span><button class="btn btn-ghost btn-sm" data-action="close-modal">${IC.x}</button></div>
+    <div class="modal-bd">
+      <p class="text-sm text-mut mb4">Are you sure you want to decline signing <b>${esc(doc.name)}</b>? The sender will be notified.</p>
+      <div class="fg"><label class="fl">Reason (optional)</label><textarea class="fi" id="decline-reason" rows="3" placeholder="Provide a reason…" style="resize:none"></textarea></div>
+    </div>
+    <div class="modal-ft"><button class="btn btn-secondary" data-action="close-modal">Cancel</button>
+      <button class="btn btn-danger" id="confirm-decline">Decline</button></div>
+  </div>`);
+  document.getElementById('confirm-decline').onclick=async()=>{
+    const reason=(document.getElementById('decline-reason').value||'').trim();
+    await SB.from('signing_recipients').update({status:'declined',decline_reason:reason}).eq('id',rec.id);
+    await SB.from('documents').update({status:'declined'}).eq('id',doc.id);
+    await logAudit(doc.id,`Declined by ${rec.name}`,{reason});
+    // Notify uploader
+    const{data:uploader}=await SB.from('profiles').select('name,email').eq('id',doc.uploaded_by).single();
+    if(uploader) await sendDeclineEmail(uploader.email,uploader.name,doc.name,rec.name,reason);
+    hideModal();
+    document.getElementById('ext-content').innerHTML=`<div class="card"><div class="card-bd" style="text-align:center;padding:40px">
+      <div style="font-size:48px;margin-bottom:16px">❌</div><h2 class="fw7 mb3">You have declined to sign</h2>
+      <p class="text-mut">The document sender has been notified.</p></div></div>`;
+  };
+}
+
+async function completeExternalSigning(doc, rec, myFields, pdf){
+  const required=myFields.filter(f=>f.required!==false);
+  const unfilled=required.filter(f=>!f.value);
+  if(unfilled.length>0){ toast(`Please fill all required fields (${unfilled.length} remaining)`,'err'); return; }
+  showLoading('Completing signing…');
+  try{
+    // Update fields in document
+    let allFields=[];
+    try{ allFields=typeof doc.signing_fields==='string'?JSON.parse(doc.signing_fields):doc.signing_fields||[]; }catch(e){ allFields=[]; }
+    myFields.forEach(f=>{ const idx=allFields.findIndex(x=>x.id===f.id); if(idx>=0) allFields[idx]=f; });
+    await SB.from('documents').update({signing_fields:JSON.stringify(allFields)}).eq('id',doc.id);
+    await SB.from('signing_recipients').update({status:'signed',signed_at:new Date().toISOString()}).eq('id',rec.id);
+    await logAudit(doc.id,`Signed by ${rec.name}`,{recipientId:rec.id});
+    // Check if all signed
+    const{data:allRecs}=await SB.from('signing_recipients').select('status,role').eq('document_id',doc.id);
+    const signers=allRecs.filter(r=>r.role==='signer');
+    const allSigned=signers.every(r=>r.status==='signed');
+    if(allSigned){
+      await SB.from('documents').update({status:'completed'}).eq('id',doc.id);
+      await logAudit(doc.id,'All parties signed — document completed');
+      const{data:uploader}=await SB.from('profiles').select('name,email').eq('id',doc.uploaded_by).single();
+      if(uploader) await sendCompletionEmail(uploader.email,uploader.name,doc.name,signers.length);
+    }
+    hideLoading();
+    document.getElementById('ext-content').innerHTML=`<div class="card"><div class="card-bd" style="text-align:center;padding:40px">
+      <div style="font-size:48px;margin-bottom:16px">✅</div><h2 class="fw7 mb3">Successfully Signed!</h2>
+      <p class="text-mut mb4">You have signed <b>${esc(doc.name)}</b>. A copy will be emailed once all parties sign.</p>
+      <div style="padding:14px;background:var(--ok-l);border-radius:8px;font-size:13px;color:#065F46">
+        ${allSigned?'🎉 All parties have signed — the document is now complete!':'⏳ Waiting for other signers…'}</div></div></div>`;
+  }catch(e){ hideLoading(); toast('Error completing signing: '+e.message,'err'); }
+}
+
+// =====================================================
+// REALTIME NOTIFICATIONS
+// =====================================================
+let notifChannel=null;
+async function subscribeNotifications(){
+  if(!SB||!S.user||notifChannel) return;
+  // Load initial unread count
+  const{data,count}=await SB.from('notifications').select('id',{count:'exact'}).eq('user_id',S.user.id).eq('read',false);
+  S.unreadCount=count||0;
+  updateNotifBell();
+
+  notifChannel=SB.channel('user-notifs-'+S.user.id)
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'notifications',filter:`user_id=eq.${S.user.id}`},
+      payload=>{
+        S.unreadCount++;
+        updateNotifBell();
+        toast(payload.new.title, payload.new.type||'info');
+      })
+    .subscribe();
+}
+function updateNotifBell(){
+  const badge=document.getElementById('notif-badge');
+  if(badge){ badge.textContent=S.unreadCount; badge.style.display=S.unreadCount>0?'flex':'none'; }
+}
+
+// =====================================================
+// SETUP PAGE
+// =====================================================
+function renderSetup(){
+  const SQL_LINK='https://supabase.com/dashboard/project/_/sql/new';
+  const FUNC_GUIDE='https://supabase.com/docs/guides/functions';
+  return`<div id="setup-page">
+  <div class="setup-card">
+    <div class="setup-hd">
+      <h1>⚙️ Connect SignSoft to Supabase</h1>
+      <p>Follow these steps once — takes about 10 minutes. You only do this once.</p>
+    </div>
+
+    <div class="setup-step">
+      <div class="setup-step-num">1</div>
+      <div class="setup-step-body">
+        <div class="setup-step-title">Create a Supabase project</div>
+        <p class="text-sm text-mut mb2">Go to <a href="https://supabase.com" target="_blank" style="color:var(--blue)">supabase.com</a> → New Project → fill in name + password. It takes ~2 minutes to provision.</p>
+      </div>
+    </div>
+
+    <div class="setup-step">
+      <div class="setup-step-num">2</div>
+      <div class="setup-step-body">
+        <div class="setup-step-title">Run the database schema</div>
+        <p class="text-sm text-mut mb2">In Supabase → SQL Editor → New Query, paste and run the schema file.</p>
+        <a href="#" id="dl-schema" class="btn btn-secondary btn-sm">${IC.dl} Download schema.sql</a>
+      </div>
+    </div>
+
+    <div class="setup-step">
+      <div class="setup-step-num">3</div>
+      <div class="setup-step-body">
+        <div class="setup-step-title">Create the "documents" Storage bucket</div>
+        <p class="text-sm text-mut mb2">Supabase → Storage → New Bucket → Name: <code>documents</code> → Private (not public) → Create.</p>
+        <p class="text-sm text-mut">Then under Policies for the bucket, add: <b>Authenticated users can upload and read files in their own folder.</b></p>
+      </div>
+    </div>
+
+    <div class="setup-step">
+      <div class="setup-step-num">4</div>
+      <div class="setup-step-body">
+        <div class="setup-step-title">Deploy the email Edge Function <span class="badge bg-warn" style="font-size:10px">Optional but recommended</span></div>
+        <p class="text-sm text-mut mb2">Install Supabase CLI, then run:</p>
+        <div class="code-block">supabase functions deploy send-email<br>supabase secrets set RESEND_API_KEY=re_your_key_here<br>supabase secrets set FROM_EMAIL=noreply@yourdomain.com<button class="code-copy" onclick="navigator.clipboard.writeText('supabase functions deploy send-email')">Copy</button></div>
+        <a href="#" id="dl-func" class="btn btn-secondary btn-sm">${IC.dl} Download send-email.ts</a>
+        <p class="text-sm text-mut mt2">Get a free Resend API key at <a href="https://resend.com" target="_blank" style="color:var(--blue)">resend.com</a> (3,000 emails/month free).</p>
+      </div>
+    </div>
+
+    <div class="setup-step" style="border-bottom:none">
+      <div class="setup-step-num" style="background:var(--ok)">5</div>
+      <div class="setup-step-body">
+        <div class="setup-step-title">Enter your Supabase credentials</div>
+        <p class="text-sm text-mut mb3">Find these in: Supabase Dashboard → Settings → API</p>
+        <div class="fg"><label class="fl">Project URL</label><input class="fi" id="setup-url" placeholder="https://xxxx.supabase.co"></div>
+        <div class="fg"><label class="fl">Anon/Public Key</label><input class="fi" id="setup-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…" type="password"></div>
+        <div class="fg"><label class="fl">Resend API Key <span class="text-mut">(optional — for real emails)</span></label><input class="fi" id="setup-resend" placeholder="re_xxxx" type="password"></div>
+        <div id="setup-err" class="ferr hidden mb3"></div>
+        <button class="btn btn-primary btn-lg w100" id="setup-connect">Connect & Launch SignSoft →</button>
+      </div>
+    </div>
+  </div></div>`;
+}
+
+function bindSetupEvents(){
+  document.getElementById('dl-schema').onclick=(e)=>{
+    e.preventDefault();
+    const schema=`-- Download from the GitHub repo or contact your developer for schema.sql\n-- Run in Supabase SQL Editor`;
+    const blob=new Blob([schema],{type:'text/plain'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='schema.sql';a.click();
+  };
+  document.getElementById('dl-func').onclick=(e)=>{
+    e.preventDefault();
+    const code=`// Deploy this as a Supabase Edge Function named "send-email"\n// See send-email.ts in the download package`;
+    const blob=new Blob([code],{type:'text/plain'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='send-email.ts';a.click();
+  };
+  document.getElementById('setup-connect').onclick=async()=>{
+    const url=(document.getElementById('setup-url').value||'').trim();
+    const key=(document.getElementById('setup-key').value||'').trim();
+    const resend=(document.getElementById('setup-resend').value||'').trim();
+    if(!url||!key){document.getElementById('setup-err').textContent='Supabase URL and Anon Key are required.';document.getElementById('setup-err').classList.remove('hidden');return;}
+    if(!url.startsWith('https://')){document.getElementById('setup-err').textContent='URL must start with https://';document.getElementById('setup-err').classList.remove('hidden');return;}
+    const ok=initSupabase(url,key);
+    if(!ok){document.getElementById('setup-err').textContent='Failed to initialize Supabase client. Check your URL and key.';document.getElementById('setup-err').classList.remove('hidden');return;}
+    showLoading('Testing connection…');
+    try{
+      const{error}=await SB.from('profiles').select('id').limit(1);
+      if(error&&error.code!=='PGRST116') throw error;
+      saveConfig({supabaseUrl:url,supabaseKey:key,resendKey:resend||null});
+      hideLoading(); toast('Connected to Supabase!','success');
+      setTimeout(()=>render(),500);
+    }catch(e){
+      hideLoading();
+      document.getElementById('setup-err').textContent='Connection failed: '+(e.message||'Check your credentials and try again.');
+      document.getElementById('setup-err').classList.remove('hidden');
+    }
+  };
+}
+
+// =====================================================
+// LOGIN
+// =====================================================
+function renderLogin(){
+  return`<div id="login-page">
+  <div class="login-card">
+    <div style="text-align:center;margin-bottom:32px">
+      <div style="width:52px;height:52px;background:var(--blue);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px">${IC.shield.replace('width="16"','width="26"').replace('height="16"','height="26"').replace('stroke="currentColor"','stroke="#fff"')}</div>
+      <h1 style="font-size:26px;font-weight:800;letter-spacing:-1px">SignSoft</h1>
+      <p class="text-sm text-mut mt2">Enterprise Document Signing</p>
+    </div>
+    <div id="login-form">
+      <div class="fg"><label class="fl">Email address</label><input class="fi" type="email" id="l-email" placeholder="you@company.com" autocomplete="email"></div>
+      <div class="fg"><label class="fl">Password</label><input class="fi" type="password" id="l-pw" placeholder="••••••••" autocomplete="current-password"></div>
+      <div id="l-err" class="ferr hidden mb3"></div>
+      <button class="btn btn-primary w100 btn-lg" id="l-btn">Sign In</button>
+      <div class="divider"></div>
+      <div style="text-align:center;font-size:13px">No account? <span style="color:var(--blue);cursor:pointer;font-weight:500" id="l-signup">Create one →</span></div>
+    </div>
+    <div id="signup-form" class="hidden">
+      <h3 class="fw7 mb4">Create Account</h3>
+      <div class="grid2"><div class="fg"><label class="fl">Full Name</label><input class="fi" id="s-name" placeholder="Jane Smith"></div><div class="fg"><label class="fl">Department</label><input class="fi" id="s-dept" placeholder="Legal"></div></div>
+      <div class="fg"><label class="fl">Email</label><input class="fi" type="email" id="s-email" placeholder="you@company.com"></div>
+      <div class="fg"><label class="fl">Password</label><input class="fi" type="password" id="s-pw" placeholder="Min. 6 characters"></div>
+      <div id="s-err" class="ferr hidden mb3"></div>
+      <button class="btn btn-primary w100 btn-lg" id="s-btn">Create Account</button>
+      <div class="mt3 text-center text-sm"><span style="color:var(--blue);cursor:pointer" id="s-back">← Back to sign in</span></div>
+    </div>
+    <div id="mfa-form" class="hidden">
+      <div style="text-align:center;margin-bottom:24px">
+        <div style="font-size:36px;margin-bottom:8px">🔐</div>
+        <h3 class="fw7 mb2">Two-Factor Authentication</h3>
+        <p class="text-sm text-mut">Enter the 6-digit code from your authenticator app.</p>
+      </div>
+      <div class="fg"><label class="fl">Authentication Code</label><input class="fi" id="l-totp" placeholder="000000" maxlength="6" style="text-align:center;font-size:22px;letter-spacing:6px"></div>
+      <div id="mfa-err" class="ferr hidden mb3"></div>
+      <button class="btn btn-primary w100 btn-lg" id="l-mfa-btn">Verify</button>
+      <div class="mt3 text-center"><span class="text-sm text-mut" style="cursor:pointer" id="l-back-mfa">← Back</span></div>
+    </div>
+    <div class="mt4" style="padding:12px;background:var(--bg);border-radius:8px;font-size:12px;color:var(--mut)">
+      <div class="fw6 mb2" style="color:var(--txt)">⚙️ Need to reconnect Supabase?</div>
+      <span style="color:var(--blue);cursor:pointer" id="l-reset-config">Reset configuration →</span>
+    </div>
+  </div></div>`;
+}
+
+function bindLoginEvents(){
+  document.getElementById('l-btn').onclick=doLogin;
+  document.getElementById('l-email').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+  document.getElementById('l-pw').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+  document.getElementById('l-signup').onclick=()=>{
+    document.getElementById('login-form').classList.add('hidden');
+    document.getElementById('signup-form').classList.remove('hidden');
+  };
+  document.getElementById('s-back').onclick=()=>{
+    document.getElementById('signup-form').classList.add('hidden');
+    document.getElementById('login-form').classList.remove('hidden');
+  };
+  document.getElementById('s-btn').onclick=doSignup;
+  document.getElementById('l-reset-config').onclick=()=>{ localStorage.removeItem(CFG_KEY); render(); };
+}
+
+async function doLogin(){
+  const email=(document.getElementById('l-email').value||'').trim();
+  const pw=(document.getElementById('l-pw').value||'');
+  if(!email||!pw){showLoginErr('Please enter email and password.');return;}
+  showLoading('Signing in…');
+  try{
+    const{data,error}=await SB.auth.signInWithPassword({email,password:pw});
+    if(error) throw error;
+    if(data.session?.user?.factors?.length>0){
+      // MFA required
+      hideLoading();
+      S.mfaFactorId=data.session.user.factors[0].id;
+      document.getElementById('login-form').classList.add('hidden');
+      document.getElementById('mfa-form').classList.remove('hidden');
+      document.getElementById('l-mfa-btn').onclick=doMFA;
+      document.getElementById('l-back-mfa').onclick=()=>{document.getElementById('mfa-form').classList.add('hidden');document.getElementById('login-form').classList.remove('hidden');};
+      return;
+    }
+    S.user=data.user;
+    await loadProfile();
+    hideLoading(); toast(`Welcome back, ${S.profile?.name?.split(' ')[0]||'there'}!`,'success');
+    nav('home');
+  }catch(e){
+    hideLoading(); showLoginErr(e.message||'Login failed');
+  }
+}
+
+async function doSignup(){
+  const name=(document.getElementById('s-name').value||'').trim();
+  const email=(document.getElementById('s-email').value||'').trim();
+  const pw=(document.getElementById('s-pw').value||'');
+  const dept=(document.getElementById('s-dept').value||'').trim();
+  if(!name||!email||!pw){showSignupErr('All fields required.');return;}
+  if(pw.length<6){showSignupErr('Password must be at least 6 characters.');return;}
+  showLoading('Creating account…');
+  try{
+    const{data,error}=await SB.auth.signUp({email,password:pw,options:{data:{name,dept,role:'user'}}});
+    if(error) throw error;
+    S.user=data.user;
+    // Profile created by DB trigger; load it
+    await new Promise(r=>setTimeout(r,800)); // Wait for trigger
+    await loadProfile();
+    hideLoading(); toast('Account created! Welcome to SignSoft.','success');
+    nav('home');
+  }catch(e){
+    hideLoading(); showSignupErr(e.message||'Sign up failed');
+  }
+}
+
+async function doMFA(){
+  const code=(document.getElementById('l-totp').value||'').trim();
+  if(!code){return;}
+  showLoading('Verifying…');
+  try{
+    const{data:{session},error}=await SB.auth.mfa.challengeAndVerify({factorId:S.mfaFactorId,code});
+    if(error) throw error;
+    S.user=session.user;
+    await loadProfile();
+    hideLoading(); toast(`Welcome back, ${S.profile?.name?.split(' ')[0]||'there'}!`,'success');
+    nav('home');
+  }catch(e){
+    hideLoading();
+    document.getElementById('mfa-err').textContent=e.message||'Incorrect code';
+    document.getElementById('mfa-err').classList.remove('hidden');
+  }
+}
+
+function showLoginErr(msg){document.getElementById('l-err').textContent=msg;document.getElementById('l-err').classList.remove('hidden');}
+function showSignupErr(msg){document.getElementById('s-err').textContent=msg;document.getElementById('s-err').classList.remove('hidden');}
+
+async function loadProfile(){
+  if(!S.user) return;
+  const{data,error}=await SB.from('profiles').select('*').eq('id',S.user.id).single();
+  if(!error) S.profile=data;
+  else{
+    // Profile might not exist yet (new user), create it
+    const{error:ie}=await SB.from('profiles').insert({
+      id:S.user.id, name:S.user.user_metadata?.name||S.user.email?.split('@')[0]||'User',
+      email:S.user.email, role:S.user.user_metadata?.role||'user',
+      dept:S.user.user_metadata?.dept||null
+    });
+    if(!ie){ const{data:d2}=await SB.from('profiles').select('*').eq('id',S.user.id).single(); S.profile=d2; }
+  }
+}
+
+// =====================================================
+// SHELL / LAYOUT
+// =====================================================
+function renderShell(content){
+  const p=S.profile;
+  const isAdmin=p&&['super_admin','org_admin'].includes(p.role);
+  const pageTitles={home:'Home','documents':'Documents','sign-yourself':'Sign Yourself','send-to-others':'Send to Others',audit:'Audit Trail',admin:'Admin Panel',settings:'Settings',delegate:'Substitute Signing'};
+  const pendingCount=S.docs.filter(d=>d.status==='pending').length;
+  return`<div id="app-shell">
+  <div id="sidebar">
+    <div class="s-logo">
+      <div class="s-logo-mark">${IC.shield.replace('stroke="currentColor"','stroke="#fff"')}</div>
+      <div><div class="s-logo-text">SignSoft</div><div class="s-logo-sub">Powered by Supabase</div></div>
+    </div>
+    <nav class="s-nav">
+      <div class="s-sec">Workspace</div>
+      ${[['home','Home','home'],['documents','Documents','docs'],['sign-yourself','Sign Yourself','pen'],['send-to-others','Send to Others','send'],['audit','Audit Trail','audit'],['delegate','Substitute Signing','delegate']].map(([id,lbl,ico])=>`
+      <div class="nav-item${S.page===id?' active':''}" data-nav="${id}">${IC[ico]}<span>${lbl}</span>${id==='documents'&&pendingCount>0?`<span class="nav-badge">${pendingCount}</span>`:''}</div>`).join('')}
+      ${isAdmin?`<div class="s-sec">Administration</div><div class="nav-item${S.page==='admin'?' active':''}" data-nav="admin">${IC.users}<span>Admin Panel</span></div>`:''}
+      <div class="s-sec">Account</div>
+      <div class="nav-item${S.page==='settings'?' active':''}" data-nav="settings">${IC.settings}<span>Settings</span></div>
+    </nav>
+    <div class="s-user" data-nav="settings">
+      <div class="u-av" style="background:${avColor(p?.id||'')}">${initials(p?.name||'U')}</div>
+      <div style="flex:1;min-width:0"><div class="u-name">${esc(p?.name||'User')}</div><div class="u-role">${(p?.role||'user').replace('_',' ')}</div></div>
+      <span data-action="logout" title="Sign out" style="color:#475569;cursor:pointer;padding:4px">${IC.logout}</span>
+    </div>
+  </div>
+  <div id="main">
+    <div id="topbar">
+      <span class="fw6" style="font-size:15px">${pageTitles[S.page]||''}</span>
+      <div class="flex gap3 aic" style="position:relative">
+        ${S.page==='home'?`<button class="btn btn-primary" data-nav="sign-yourself">${IC.pen} Sign a Document</button>`:''}
+        ${S.page==='documents'?`<button class="btn btn-primary btn-sm" data-nav="sign-yourself">${IC.pen} Sign</button><button class="btn btn-secondary btn-sm" data-nav="send-to-others">${IC.send} Send</button>`:''}
+        <div class="notif-bell" id="notif-bell" data-action="toggle-notif">
+          ${IC.bell}
+          <div class="notif-count" id="notif-badge" style="display:${S.unreadCount>0?'flex':'none'}">${S.unreadCount}</div>
+        </div>
+        ${S.notifOpen?await renderNotifPanel():''}
+      </div>
+    </div>
+    <div id="page"${(S.page==='sign-yourself'&&S.syStep===2)||(S.page==='send-to-others'&&S.stoStep===3)?' class="no-pad"':''}>${content}</div>
+  </div>
+  </div>`;
+}
+
+async function renderNotifPanel(){
+  const{data:notifs=[]}=await SB.from('notifications').select('*').eq('user_id',S.user.id).order('created_at',{ascending:false}).limit(20);
+  return`<div class="notif-panel">
+    <div class="card-hd"><span class="card-title">Notifications</span>
+      <button class="btn btn-ghost btn-sm" data-action="mark-all-read">Mark all read</button></div>
+    ${notifs.length===0?`<div class="empty" style="padding:24px"><p class="text-mut text-sm">No notifications yet.</p></div>`:''}
+    ${notifs.map(n=>`<div class="notif-item${n.read?'':' unread'}" data-action="read-notif" data-id="${n.id}">
+      <div class="fw6" style="font-size:13px">${esc(n.title)}</div>
+      <div class="text-sm text-mut">${esc(n.message)}</div>
+      <div class="text-sm text-mut mt2">${timeAgo(n.created_at)}</div>
+    </div>`).join('')}
+  </div>`;
+}
+
+// =====================================================
+// PAGE CONTENT ROUTER
+// =====================================================
+async function getPageContent(){
+  await loadDocs();
+  switch(S.page){
+    case'home': return await renderHome();
+    case'documents': return renderDocuments();
+    case'sign-yourself': return renderSignYourself();
+    case'send-to-others': return renderSendToOthers();
+    case'audit': return await renderAudit();
+    case'admin': return await renderAdmin();
+    case'settings': return await renderSettings();
+    case'delegate': return await renderDelegate();
+    default: return await renderHome();
+  }
+}
+
+async function loadDocs(){
+  if(!SB||!S.user) return;
+  try{
+    const{data=[]}=await SB.from('documents')
+      .select('*,signing_recipients(*)')
+      .not('status','in','("deleted")')
+      .order('uploaded_at',{ascending:false})
+      .limit(100);
+    S.docs=data||[];
+  }catch(e){ console.warn('loadDocs error:',e); S.docs=[]; }
+}
+
+// =====================================================
+// HOME (DASHBOARD)
+// =====================================================
+async function renderHome(){
+  const myDocs=S.docs;
+  const total=myDocs.length;
+  const pending=myDocs.filter(d=>d.status==='pending').length;
+  const completed=myDocs.filter(d=>d.status==='completed').length;
+  const today=new Date().toDateString();
+  const completedToday=myDocs.filter(d=>d.status==='completed'&&d.updated_at&&new Date(d.updated_at).toDateString()===today).length;
+  const overdue=myDocs.filter(d=>d.status==='pending'&&d.expires_at&&new Date(d.expires_at)<new Date()).length;
+  const myPending=myDocs.filter(d=>d.status==='pending'&&(d.signing_recipients||[]).some(r=>r.user_id===S.user.id&&r.status==='pending'));
+  const upcoming=myDocs.filter(d=>d.status==='pending'&&d.expires_at).sort((a,b)=>new Date(a.expires_at)-new Date(b.expires_at)).slice(0,5);
+
+  return`
+  <div class="stats-grid">
+    <div class="stat"><div class="stat-lbl">Total Documents</div><div class="stat-val">${total}</div><div class="stat-sub">All time</div></div>
+    <div class="stat"><div class="stat-lbl">Pending Signatures</div><div class="stat-val" style="color:var(--warn)">${pending}</div><div class="stat-sub">${overdue>0?`<span class="urgency-red">${overdue} overdue</span>`:'Awaiting action'}</div></div>
+    <div class="stat"><div class="stat-lbl">Completed</div><div class="stat-val" style="color:var(--ok)">${completed}</div><div class="stat-sub">${completedToday>0?`${completedToday} today`:'Fully signed'}</div></div>
+    <div class="stat"><div class="stat-lbl">Needs Your Signature</div><div class="stat-val" style="color:var(--err)">${myPending.length}</div><div class="stat-sub">Action required</div></div>
+  </div>
+
+  ${myPending.length>0?`<div class="card mb6">
+    <div class="card-hd"><span class="card-title">⚠️ Waiting for Your Signature</span></div>
+    <table><thead><tr><th>Document</th><th>Sent by</th><th>Deadline</th><th>Action</th></tr></thead><tbody>
+    ${myPending.map(d=>{
+      const by=(d.signing_recipients||[]).find(r=>r.user_id===d.uploaded_by);
+      const urg=deadlineUrgency(d.expires_at);
+      return`<tr>
+        <td><div class="flex gap2 aic">${IC.file}<b>${esc(d.name)}</b></div></td>
+        <td class="text-mut text-sm">${esc(S.profile?.name||'—')}</td>
+        <td><span class="${urg.cls}">${urg.txt||'No deadline'}</span></td>
+        <td><button class="btn btn-primary btn-sm" data-action="sign-doc" data-id="${d.id}">${IC.pen} Sign Now</button></td>
+      </tr>`;}).join('')}
+    </tbody></table></div>`:''}
+
+  <div class="grid2 gap4 mb6">
+    <div class="card">
+      <div class="card-hd"><span class="card-title">Quick Actions</span></div>
+      <div class="card-bd" style="display:flex;flex-direction:column;gap:10px">
+        <button class="btn btn-primary" data-nav="sign-yourself" style="justify-content:center">${IC.pen} Sign a Document</button>
+        <button class="btn btn-secondary" data-nav="send-to-others" style="justify-content:center">${IC.send} Send for Signing</button>
+        <button class="btn btn-secondary" data-nav="delegate" style="justify-content:center">${IC.delegate} Manage Delegates</button>
+        <button class="btn btn-secondary" data-nav="documents" style="justify-content:center">${IC.docs} All Documents</button>
+      </div>
+    </div>
+    ${upcoming.length>0?`<div class="card">
+      <div class="card-hd"><span class="card-title">⏰ Upcoming Deadlines</span></div>
+      <div>
+        ${upcoming.map(d=>{const urg=deadlineUrgency(d.expires_at);return`<div style="display:flex;gap:10px;padding:12px 16px;border-bottom:1px solid var(--bdr);align-items:center">
+          <div style="flex:1;min-width:0"><div class="fw6 text-sm" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(d.name)}</div>
+          <div class="${urg.cls} text-sm">${IC.clock} ${urg.txt}</div></div>
+          ${statusBadge(d.status)}
+        </div>`;}).join('')}
+      </div></div>`:
+    `<div class="card"><div class="card-hd"><span class="card-title">Recent Activity</span></div>
+      <div>${S.docs.slice(0,5).map(d=>`<div style="display:flex;gap:10px;padding:12px 16px;border-bottom:1px solid var(--bdr);align-items:center;cursor:pointer" data-nav="documents">
+        <div style="width:34px;height:34px;background:${avColor(d.id)};border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0">${IC.file.replace('stroke="currentColor"','stroke="#fff"').replace('width="16"','width="14"').replace('height="16"','height="14"')}</div>
+        <div style="flex:1;min-width:0"><div class="fw6" style="font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(d.name)}</div>
+        <div class="text-sm text-mut">${timeAgo(d.uploaded_at)}</div></div>${statusBadge(d.status)}
+      </div>`).join('')}</div></div>`}
+  </div>`;
+}
+
+// =====================================================
+// DOCUMENTS LIST
+// =====================================================
+function renderDocuments(){
+  const filters=['all','pending','completed','draft','signed','expired','voided'];
+  let docs=S.docs;
+  if(S.docFilter!=='all') docs=docs.filter(d=>d.status===S.docFilter);
+  if(S.docSearch) docs=docs.filter(d=>d.name.toLowerCase().includes(S.docSearch.toLowerCase())||d.category?.toLowerCase().includes(S.docSearch.toLowerCase()));
+  docs=docs.slice().sort((a,b)=>new Date(b.uploaded_at)-new Date(a.uploaded_at));
+  return`
+  <div class="flex jcb aic mb4">
+    <div class="flex gap2 aic" style="flex-wrap:wrap">
+      ${filters.map(f=>`<button class="btn btn-sm${S.docFilter===f?' btn-primary':' btn-secondary'}" data-filter="${f}">${f.charAt(0).toUpperCase()+f.slice(1)} (${f==='all'?S.docs.length:S.docs.filter(d=>d.status===f).length})</button>`).join('')}
+    </div>
+    <div style="position:relative">
+      <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--mut)">${IC.search}</span>
+      <input class="fi" id="doc-search" placeholder="Search…" style="padding-left:32px;width:200px" value="${esc(S.docSearch)}">
+    </div>
+  </div>
+  <div class="card">
+  ${docs.length===0?`<div class="empty"><h3>No documents</h3><p>Upload a document to get started.</p><button class="btn btn-primary" data-nav="sign-yourself">${IC.plus} Upload</button></div>`:`
+  <table>
+    <thead><tr><th>Document</th><th>Category</th><th>Signers</th><th>Status</th><th>Deadline</th><th>Date</th><th>Actions</th></tr></thead>
+    <tbody>
+      ${docs.map(d=>{
+        const recs=d.signing_recipients||[];
+        const urg=deadlineUrgency(d.expires_at);
+        return`<tr>
+          <td><div class="flex gap2 aic">
+            <div style="width:32px;height:32px;background:${avColor(d.id)};border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0">${IC.file.replace('stroke="currentColor"','stroke="#fff"').replace('width="16"','width="14"').replace('height="16"','height="14"')}</div>
+            <div><div class="fw6" style="font-size:13px">${esc(d.name)}</div><div class="text-sm text-mut">${d.pages||1} page${(d.pages||1)>1?'s':''} · ${d.file_size||'—'}</div></div></div></td>
+          <td><span class="badge bg-gray">${esc(d.category||'General')}</span></td>
+          <td><div class="flex gap2 aic">
+            ${recs.slice(0,3).map(r=>`<div title="${esc(r.name)}" style="width:26px;height:26px;border-radius:50%;background:${avColor(r.id)};display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:700;border:2px solid #fff">${initials(r.name)}</div>`).join('')}
+            ${recs.length===0?'<span class="text-sm text-mut">—</span>':''}
+            ${recs.length>3?`<span class="text-sm text-mut">+${recs.length-3}</span>`:''}
+          </div></td>
+          <td>${statusBadge(d.status)}</td>
+          <td><span class="${urg.cls}">${urg.txt||'—'}</span></td>
+          <td class="text-sm text-mut">${fmtDate(d.uploaded_at)}</td>
+          <td><div class="flex gap2">
+            <button class="btn btn-ghost btn-sm" data-action="view-audit" data-id="${d.id}">${IC.audit}</button>
+            ${d.status==='pending'?`<button class="btn btn-ghost btn-sm" data-action="view-links" data-id="${d.id}">${IC.link}</button><button class="btn btn-ghost btn-sm" data-action="send-reminder" data-id="${d.id}">${IC.send}</button>`:''}
+            ${['pending','draft'].includes(d.status)?`<button class="btn btn-ghost btn-sm" data-action="void-doc" data-id="${d.id}" style="color:var(--warn)">Void</button>`:''}
+            <button class="btn btn-ghost btn-sm" data-action="del-doc" data-id="${d.id}" style="color:var(--err)">${IC.trash}</button>
+          </div></td>
+        </tr>`;}).join('')}
+    </tbody>
+  </table>`}
+  </div>`;
+}
+
+// =====================================================
+// SIGN YOURSELF
+// =====================================================
+function renderSignYourself(){
+  const steps=[{l:'Upload'},{l:'Place & Sign'},{l:'Download'}];
+  const stepBar=`<div class="steps">${steps.map((st,i)=>{const s=i+1<S.syStep?'done':i+1===S.syStep?'active':'pend';return`${i>0?'<div class="step-line"></div>':''}<div class="step ${s}"><div class="step-n">${i+1<S.syStep?IC.check:i+1}</div><div class="step-lbl">${st.l}</div></div>`;}).join('')}</div>`;
+  if(S.syStep===1) return`<div style="max-width:640px;margin:0 auto"><div class="card"><div class="card-hd"><span class="card-title">Upload Document</span></div><div class="card-bd">${stepBar}
+    <div class="drop-zone" id="sy-drop">${IC.up}<h3>Drop your PDF here</h3><p>PDF, DOCX, PNG — up to 25 MB</p><div class="mt3"><button class="btn btn-secondary" id="sy-browse">Browse Files</button></div><input type="file" id="sy-file" accept=".pdf,.png,.jpg,.docx" class="hidden"></div>
+    ${S.syFile?`<div style="margin-top:16px;padding:14px;background:var(--ok-l);border-radius:8px;display:flex;align-items:center;gap:12px">${IC.file}<div style="flex:1"><b>${esc(S.syName)}</b><br><span class="text-sm text-mut">Ready to place fields</span></div><button class="btn btn-primary" data-action="sy-next">Continue →</button></div>`:''}
+  </div></div></div>`;
+  if(S.syStep===2) return renderSigningCanvas(S.syFields,S.syPlacing,'sy');
+  if(S.syStep===3){
+    const filled=S.syFields.filter(f=>f.value).length;
+    return`<div style="max-width:640px;margin:0 auto"><div class="card"><div class="card-hd"><span class="card-title">Review & Download</span></div><div class="card-bd">${stepBar}
+      <div style="padding:24px;background:var(--ok-l);border-radius:8px;text-align:center;margin-bottom:20px">
+        <div style="font-size:40px;margin-bottom:8px">✅</div><h3 class="fw7 mb2">Document Ready</h3>
+        <p class="text-sm text-mut">${filled}/${S.syFields.length} fields completed.</p></div>
+      <div class="card mb4">
+        <div class="card-hd"><span class="card-title">Fields Summary</span></div>
+        <div class="card-bd" style="padding:12px">
+          ${S.syFields.length===0?'<p class="text-sm text-mut">No fields placed.</p>':''}
+          ${S.syFields.map(f=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--bdr)">
+            <span class="badge ${f.type==='signature'?'bg-blue':f.type==='initials'?'bg-purple':f.type==='date'?'bg-ok':'bg-warn'}">${f.type}</span>
+            <span class="text-sm">Page ${f.page}</span>
+            ${f.value?`<span style="color:var(--ok)">${IC.check} Filled</span>`:`<span class="text-mut text-sm">Empty</span>`}
+          </div>`).join('')}
+        </div>
+      </div>
+      <div class="flex gap3">
+        <button class="btn btn-secondary" data-action="sy-back">← Edit Fields</button>
+        <button class="btn btn-success" id="sy-dl-btn" style="flex:1;justify-content:center">${IC.dl} Download Signed PDF</button>
+      </div>
+    </div></div></div>`;
+  }
+}
+
+// =====================================================
+// SEND TO OTHERS
+// =====================================================
+function renderSendToOthers(){
+  const steps=[{l:'Upload'},{l:'Recipients'},{l:'Place Fields'},{l:'Send'}];
+  const stepBar=`<div class="steps">${steps.map((st,i)=>{const s=i+1<S.stoStep?'done':i+1===S.stoStep?'active':'pend';return`${i>0?'<div class="step-line"></div>':''}<div class="step ${s}"><div class="step-n">${i+1<S.stoStep?IC.check:i+1}</div><div class="step-lbl">${st.l}</div></div>`;}).join('')}</div>`;
+  if(S.stoStep===1) return`<div style="max-width:640px;margin:0 auto"><div class="card"><div class="card-hd"><span class="card-title">Upload Document</span></div><div class="card-bd">${stepBar}
+    <div class="drop-zone" id="sto-drop">${IC.up}<h3>Drop your PDF here</h3><p>PDF, DOCX, PNG — up to 25 MB</p><div class="mt3"><button class="btn btn-secondary" id="sto-browse">Browse Files</button></div><input type="file" id="sto-file" accept=".pdf,.png,.jpg,.docx" class="hidden"></div>
+    ${S.stoFile?`<div style="margin-top:16px;padding:14px;background:var(--ok-l);border-radius:8px;display:flex;gap:12px;align-items:center">${IC.file}<div style="flex:1"><b>${esc(S.stoName)}</b></div><button class="btn btn-primary" data-action="sto-next">Continue →</button></div>`:''}
+  </div></div></div>`;
+
+  if(S.stoStep===2) return`<div style="max-width:720px;margin:0 auto"><div class="card"><div class="card-hd"><span class="card-title">Configure Recipients</span></div><div class="card-bd">${stepBar}
+    <div class="fg"><label class="fl">Email Subject (optional)</label><input class="fi" id="sto-subj" placeholder="Please sign this document" value="${esc(S.stoSubj||'')}"></div>
+    <div class="fg"><label class="fl">Message to Recipients (optional)</label><textarea class="fi" id="sto-msg" rows="2" placeholder="Please review and sign…" style="resize:none">${esc(S.stoMsg||'')}</textarea></div>
+    <div class="fg"><label class="fl">Signing Deadline (optional)</label><input type="datetime-local" class="fi" id="sto-deadline" value="${S.stoDeadline||''}"></div>
+    <hr class="divider">
+    <div id="sto-rec-list">${S.stoRecs.map((r,i)=>`
+    <div class="rec-row"><div style="width:22px;height:22px;border-radius:50%;background:${REC_COLORS[i%REC_COLORS.length]};color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">${i+1}</div>
+      <input class="fi" style="flex:1" placeholder="Full name" value="${esc(r.name)}" data-rec-field="name" data-rec-i="${i}">
+      <input class="fi" style="flex:1.5" placeholder="Email" value="${esc(r.email)}" data-rec-field="email" data-rec-i="${i}" type="email">
+      <select class="fi" style="width:110px" data-rec-field="role" data-rec-i="${i}">
+        ${['signer','viewer','approver','cc'].map(rv=>`<option value="${rv}"${r.role===rv?' selected':''}>${rv.charAt(0).toUpperCase()+rv.slice(1)}</option>`).join('')}
+      </select>
+      <select class="fi" style="width:130px" data-rec-field="verify" data-rec-i="${i}">
+        <option value="none"${r.verify==='none'?' selected':''}>No verify</option>
+        <option value="otp"${r.verify==='otp'?' selected':''}>Email OTP</option>
+        <option value="otp_ocr"${r.verify==='otp_ocr'?' selected':''}>OTP + Face ID</option>
+      </select>
+      <button class="btn btn-ghost btn-sm" data-action="del-rec" data-i="${i}" style="color:var(--err)">✕</button>
+    </div>`).join('')}</div>
+    <button class="btn btn-secondary btn-sm mt3" data-action="add-rec">${IC.plus} Add Recipient</button>
+    <hr class="divider">
+    <div class="fg"><label class="fl">Signing Order</label>
+      <div class="flex gap4"><label class="flex gap2 aic" style="cursor:pointer"><input type="radio" name="sig-order" value="sequential"${S.stoOrder!=='parallel'?' checked':''}> Sequential</label>
+      <label class="flex gap2 aic" style="cursor:pointer"><input type="radio" name="sig-order" value="parallel"${S.stoOrder==='parallel'?' checked':''}> Parallel</label></div></div>
+    <div class="flex gap3 mt4">
+      <button class="btn btn-secondary" data-action="sto-back">← Back</button>
+      <button class="btn btn-primary" data-action="sto-next">Place Fields →</button>
+    </div>
+  </div></div></div>`;
+
+  if(S.stoStep===3) return renderSigningCanvas(S.stoFields,S.stoPlacing,'sto');
+
+  if(S.stoStep===4) return`<div style="max-width:640px;margin:0 auto"><div class="card"><div class="card-hd"><span class="card-title">Review & Send</span></div><div class="card-bd">${stepBar}
+    <div class="card mb4"><div class="card-hd"><span class="card-title">Document</span></div><div class="card-bd"><div class="flex gap2 aic">${IC.file}<b>${esc(S.stoName)}</b></div>
+    ${S.stoDeadline?`<div class="text-sm text-mut mt2">${IC.clock} Deadline: ${fmtDT(S.stoDeadline)}</div>`:''}</div></div>
+    <div class="card mb4"><div class="card-hd"><span class="card-title">Recipients (${S.stoRecs.length})</span></div>
+      ${S.stoRecs.map((r,i)=>`<div class="rec-row" style="padding:12px 20px">
+        <div style="width:22px;height:22px;border-radius:50%;background:${REC_COLORS[i%REC_COLORS.length]};color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">${i+1}</div>
+        <div style="flex:1"><div class="fw6">${esc(r.name)}</div><div class="text-sm text-mut">${esc(r.email)}</div></div>
+        <span class="badge bg-gray">${r.role}</span>
+        <span class="badge bg-blue">${r.verify==='none'?'No verify':r.verify==='otp'?'OTP':'OTP+Face'}</span>
+        <span class="badge bg-warn">${S.stoFields.filter(f=>f.recipientIdx===i).length} fields</span>
+      </div>`).join('')}
+    </div>
+    <div class="flex gap3">
+      <button class="btn btn-secondary" data-action="sto-back">← Edit</button>
+      <button class="btn btn-success" data-action="sto-send" style="flex:1;justify-content:center">${IC.send} Send for Signing</button>
+    </div>
+  </div></div></div>`;
+}
+
+// =====================================================
+// SIGNING CANVAS (shared by sign-yourself and send-to-others)
+// =====================================================
+function renderSigningCanvas(fields,placing,mode){
+  const FTYPE=[
+    {type:'signature',label:'Signature',color:'#2563EB',bg:'#DBEAFE'},
+    {type:'initials',label:'Initials',color:'#7C3AED',bg:'#EDE9FE'},
+    {type:'name',label:'Name',color:'#0891B2',bg:'#E0F2FE'},
+    {type:'date',label:'Date',color:'#059669',bg:'#D1FAE5'},
+    {type:'text',label:'Text',color:'#D97706',bg:'#FEF3C7'},
+  ];
+  const recs=mode==='sto'?S.stoRecs:[];
+  return`<div class="sign-layout">
+  <div class="field-sidebar">
+    <div class="field-sidebar-hd">Fields</div>
+    ${FTYPE.map(f=>`<div class="field-btn${placing===f.type?' placing':''}" style="border-color:${f.color};color:${f.color};background:${placing===f.type?f.bg:'transparent'}" data-place="${f.type}" data-mode="${mode}">
+      <span style="width:10px;height:10px;border-radius:2px;background:${f.color};flex-shrink:0"></span> ${f.label}
+    </div>`).join('')}
+    ${mode==='sto'&&recs.length>0?`<hr class="divider" style="margin:8px 10px">
+    <div class="field-sidebar-hd">Assign to</div>
+    ${recs.map((r,i)=>`<div class="field-btn${S.stoActiveRec===i?' placing':''}" style="border-color:${REC_COLORS[i%REC_COLORS.length]};color:${REC_COLORS[i%REC_COLORS.length]};background:${S.stoActiveRec===i?REC_COLORS[i%REC_COLORS.length]+'22':'transparent'};font-size:12px" data-rec="${i}">${initials(r.name)} ${esc(r.name)}</div>`).join('')}`:''}
+    <hr class="divider" style="margin:8px 10px">
+    <div style="padding:0 12px;font-size:12px;color:var(--mut);line-height:1.7">1. Click field type<br>2. Click on document<br>3. Click field to fill<br>4. Drag to reposition</div>
+    <div class="field-sidebar-actions">
+      <button class="btn btn-secondary w100 mb2 btn-sm" data-action="${mode}-back">← Back</button>
+      <button class="btn btn-primary w100 btn-sm" data-action="${mode}-next">Continue →</button>
+    </div>
+  </div>
+  <div class="doc-viewport" id="${mode}-viewport">
+    <div style="background:rgba(0,0,0,.5);color:#94A3B8;padding:8px 16px;border-radius:6px;font-size:12px;width:100%;max-width:700px;text-align:center;flex-shrink:0" id="${mode}-hint">
+      ${placing?`<b style="color:#60A5FA">Placing: ${placing}</b> — click document to add · ESC to cancel`:'Select a field type from the panel, then click the document.'}
+    </div>
+    <div id="${mode}-pages" style="display:flex;flex-direction:column;gap:14px;align-items:center;width:100%">
+      <div style="color:#fff;font-size:13px;padding:40px">Loading document…</div>
+    </div>
+  </div>
+  </div>`;
+}
+
+// =====================================================
+// AUDIT TRAIL
+// =====================================================
+async function renderAudit(){
+  const docs=S.docs;
+  const selId=S.auditDocId;
+  let entries=[];
+  if(selId){
+    const{data=[]}=await SB.from('audit_log').select('*').eq('document_id',selId).order('created_at',{ascending:false});
+    entries=data;
+  }else{
+    const{data=[]}=await SB.from('audit_log').select('*').order('created_at',{ascending:false}).limit(100);
+    entries=data;
+  }
+  return`<div class="flex gap4" style="align-items:flex-start">
+  <div style="width:230px;flex-shrink:0"><div class="card">
+    <div class="card-hd"><span class="card-title">Documents</span></div>
+    <div>
+      <div class="nav-item${!selId?' active':''}" data-action="audit-sel" data-id="" style="padding:10px 14px;margin:4px 6px;border-radius:6px">All events</div>
+      ${docs.map(d=>`<div class="nav-item${selId===d.id?' active':''}" data-action="audit-sel" data-id="${d.id}" style="padding:10px 14px;margin:4px 6px;border-radius:6px;flex-direction:column;align-items:flex-start;gap:3px">
+        <span style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:100%">${esc(d.name)}</span>${statusBadge(d.status)}</div>`).join('')}
+    </div>
+  </div></div>
+  <div style="flex:1;min-width:0"><div class="card">
+    <div class="card-hd">
+      <span class="card-title">${selId?esc(docs.find(d=>d.id===selId)?.name||'Document'):'All Audit Events'}</span>
+      <div class="flex gap2 aic">
+        <span class="badge bg-gray">${entries.length} events</span>
+        <button class="btn btn-secondary btn-sm" data-action="export-audit">${IC.dl} Export CSV</button>
+      </div>
+    </div>
+    <div class="card-bd">
+      ${entries.length===0?'<p class="text-mut text-sm">No events yet.</p>':''}
+      <div class="timeline">
+        ${entries.map(e=>{
+          const isSys=e.actor_name==='System';
+          const isOk=e.action?.includes('signed')||e.action?.includes('completed')||e.action?.includes('Signed');
+          return`<div class="tl-item">
+            <div class="tl-dot${isSys?' sys':isOk?' ok':''}"></div>
+            <div class="tl-time">${fmtDT(e.created_at)}</div>
+            <div class="tl-action">${esc(e.action)}</div>
+            <div class="tl-detail"><b>${esc(e.actor_name)}</b> · ${e.ip_address||'—'} · ${e.device?.substring(0,60)||'—'}</div>
+          </div>`;}).join('')}
+      </div>
+    </div>
+  </div></div></div>`;
+}
+
+// =====================================================
+// DELEGATE (SUBSTITUTE SIGNING)
+// =====================================================
+async function renderDelegate(){
+  if(!S.user) return '';
+  const{data:myDels=[]}=await SB.from('delegations').select('*,delegate:delegate_id(name,email),delegator:delegator_id(name,email)').or(`delegator_id.eq.${S.user.id},delegate_id.eq.${S.user.id}`).order('created_at',{ascending:false});
+  const{data:users=[]}=await SB.from('profiles').select('id,name,email,role').neq('id',S.user.id).eq('status','active');
+  const active=myDels.filter(d=>d.status==='active'&&new Date(d.end_date)>new Date());
+  const activeDelegateFor=active.filter(d=>d.delegate_id===S.user.id);
+  return`
+  ${activeDelegateFor.length>0?`<div style="padding:14px 20px;background:#FEF3C7;border:1px solid #D97706;border-radius:8px;margin-bottom:20px;display:flex;gap:12px;align-items:center">
+    <span style="font-size:20px">⚡</span>
+    <div><div class="fw6">You are currently signing as delegate</div>
+    <div class="text-sm">For: ${activeDelegateFor.map(d=>esc(d.delegator?.name)).join(', ')} · Until ${activeDelegateFor.map(d=>fmtDate(d.end_date)).join(', ')}</div></div>
+  </div>`:''} 
+  <div class="grid2 gap4">
+    <div class="card">
+      <div class="card-hd"><span class="card-title">My Delegates</span><button class="btn btn-primary btn-sm" data-action="add-delegate">${IC.plus} Add</button></div>
+      <div class="card-bd">
+        <p class="text-sm text-mut mb4">Delegates can sign documents on your behalf during a specified period.</p>
+        ${myDels.filter(d=>d.delegator_id===S.user.id).length===0?'<p class="text-sm text-mut">No delegates set up.</p>':''}
+        ${myDels.filter(d=>d.delegator_id===S.user.id).map(d=>`
+        <div class="del-card${d.status==='active'?' del-active':''}">
+          <div class="flex jcb aic mb2">
+            <div class="flex gap2 aic">${avatar(d.delegate?.name||'?',28,d.delegate_id)}<div><div class="fw6">${esc(d.delegate?.name||'—')}</div><div class="text-sm text-mut">${esc(d.delegate?.email||'—')}</div></div></div>
+            <span class="badge ${d.status==='active'?'bg-ok':d.status==='pending_approval'?'bg-warn':'bg-gray'}">${d.status.replace('_',' ')}</span>
+          </div>
+          <div class="text-sm text-mut">${fmtDate(d.start_date)} → ${fmtDate(d.end_date)}</div>
+          ${d.doc_type_restriction?`<div class="text-sm text-mut">Only: ${d.doc_type_restriction}</div>`:''}
+          ${d.status==='active'?`<button class="btn btn-danger btn-sm mt3" data-action="revoke-del" data-id="${d.id}">Revoke</button>`:''}
+        </div>`).join('')}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hd"><span class="card-title">Delegating For Me</span></div>
+      <div class="card-bd">
+        <p class="text-sm text-mut mb4">Documents assigned to these users will also appear in your queue.</p>
+        ${myDels.filter(d=>d.delegate_id===S.user.id).length===0?'<p class="text-sm text-mut">Nobody has delegated to you.</p>':''}
+        ${myDels.filter(d=>d.delegate_id===S.user.id).map(d=>`
+        <div class="del-card${d.status==='active'?' del-active':''}">
+          <div class="flex gap2 aic mb2">${avatar(d.delegator?.name||'?',28,d.delegator_id)}<div><div class="fw6">${esc(d.delegator?.name||'—')}</div><div class="text-sm text-mut">${esc(d.delegator?.email||'—')}</div></div>
+          <span class="badge ${d.status==='active'?'bg-ok':'bg-gray'}" style="margin-left:auto">${d.status.replace('_',' ')}</span></div>
+          <div class="text-sm text-mut">${fmtDate(d.start_date)} → ${fmtDate(d.end_date)}</div>
+          ${d.status==='pending_approval'?`<div class="flex gap2 mt3"><button class="btn btn-success btn-sm" data-action="approve-del" data-id="${d.id}">✓ Approve</button><button class="btn btn-danger btn-sm" data-action="reject-del" data-id="${d.id}">✕ Reject</button></div>`:''}
+        </div>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+function showAddDelegateModal(){
+  SB.from('profiles').select('id,name,email').neq('id',S.user.id).eq('status','active').then(({data:users=[]})=>{
+    showModal(`<div class="modal modal-sm">
+    <div class="modal-hd"><span class="modal-title">Add Delegate</span><button class="btn btn-ghost btn-sm" data-action="close-modal">${IC.x}</button></div>
+    <div class="modal-bd">
+      <div class="fg"><label class="fl">Delegate (user who signs on your behalf)</label>
+        <select class="fi" id="del-user">${users.map(u=>`<option value="${u.id}">${esc(u.name)} — ${esc(u.email)}</option>`).join('')}</select></div>
+      <div class="grid2"><div class="fg"><label class="fl">Start Date</label><input type="date" class="fi" id="del-start" value="${new Date().toISOString().slice(0,10)}"></div>
+      <div class="fg"><label class="fl">End Date</label><input type="date" class="fi" id="del-end"></div></div>
+      <div class="fg"><label class="fl">Restrict to document type (optional)</label><input class="fi" id="del-type" placeholder="e.g. HR, Legal, Contracts"></div>
+      <label class="flex gap2 aic" style="cursor:pointer"><input type="checkbox" id="del-approve"> Require delegate's approval before activating</label>
+    </div>
+    <div class="modal-ft"><button class="btn btn-secondary" data-action="close-modal">Cancel</button><button class="btn btn-primary" id="del-save">Create Delegation</button></div>
+  </div>`);
+    document.getElementById('del-save').onclick=async()=>{
+      const uid=document.getElementById('del-user').value;
+      const start=document.getElementById('del-start').value;
+      const end=document.getElementById('del-end').value;
+      const type=document.getElementById('del-type').value.trim();
+      const needsApproval=document.getElementById('del-approve').checked;
+      if(!start||!end){toast('Set start and end dates','err');return;}
+      if(new Date(end)<=new Date(start)){toast('End date must be after start','err');return;}
+      const{error}=await SB.from('delegations').insert({delegator_id:S.user.id,delegate_id:uid,start_date:new Date(start).toISOString(),end_date:new Date(end).toISOString(),doc_type_restriction:type||null,requires_approval:needsApproval,status:needsApproval?'pending_approval':'active'});
+      if(error){toast('Error: '+error.message,'err');return;}
+      await logAudit(null,'Delegation created',{delegateId:uid});
+      hideModal(); toast('Delegation created!','success'); nav('delegate');
+    };
+  });
+}
+
+// =====================================================
+// ADMIN
+// =====================================================
+async function renderAdmin(){
+  return`<div class="tabs">
+    <div class="tab${S.adminTab==='users'?' active':''}" data-atab="users">Users</div>
+    <div class="tab${S.adminTab==='roles'?' active':''}" data-atab="roles">Roles & Permissions</div>
+    <div class="tab${S.adminTab==='org'?' active':''}" data-atab="org">Organisation</div>
+  </div>
+  ${S.adminTab==='users'?await renderAdminUsers():S.adminTab==='roles'?renderAdminRoles():await renderAdminOrg()}`;
+}
+
+async function renderAdminUsers(){
+  const{data:users=[]}=await SB.from('profiles').select('*').order('joined_at',{ascending:false});
+  S.allUsers=users;
+  return`<div class="flex jcb aic mb4"><div></div><button class="btn btn-primary btn-sm" data-action="invite-user">${IC.plus} Invite User</button></div>
+  <div class="card"><table>
+    <thead><tr><th>Name</th><th>Email</th><th>Department</th><th>Role</th><th>MFA</th><th>Status</th><th>Joined</th><th></th></tr></thead>
+    <tbody>${users.map(u=>`<tr>
+      <td><div class="flex gap2 aic">${avatar(u.name,28,u.id)}<span class="fw6">${esc(u.name)}</span></div></td>
+      <td class="text-mut">${esc(u.email)}</td>
+      <td>${esc(u.dept||'—')}</td>
+      <td>${roleBadge(u.role)}</td>
+      <td><span class="badge ${u.mfa_enabled?'bg-ok':'bg-gray'}">${u.mfa_enabled?'On':'Off'}</span></td>
+      <td><span class="badge ${u.status==='active'?'bg-ok':'bg-err'}">${u.status}</span></td>
+      <td class="text-sm text-mut">${fmtDate(u.joined_at)}</td>
+      <td><button class="btn btn-ghost btn-sm" data-action="edit-user" data-id="${u.id}">Edit</button></td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+function renderAdminRoles(){
+  const perms=['Sign Documents','Send to Others','Manage Users','View All Docs','Edit Settings','Delete Documents','View Audit Trail','Manage Roles','Create Delegates'];
+  const roles=[
+    {name:'Super Admin',vals:['✓','✓','✓','✓','✓','✓','✓','✓','✓']},
+    {name:'Org Admin',vals:['✓','✓','✓','◐','✓','◐','✓','◐','✓']},
+    {name:'Manager',vals:['✓','✓','—','◐','—','—','◐','—','✓']},
+    {name:'User',vals:['✓','✓','—','—','—','—','—','—','✓']},
+  ];
+  return`<div class="card"><div class="card-hd"><span class="card-title">Permission Matrix</span><span class="text-sm text-mut">✓ Full · ◐ Partial · — None</span></div>
+  <div style="overflow-x:auto"><div class="perm-grid" style="grid-template-columns:1fr repeat(${roles.length},120px)">
+    <div class="perm-cell perm-hd">Permission</div>${roles.map(r=>`<div class="perm-cell perm-hd" style="text-align:center">${r.name}</div>`).join('')}
+    ${perms.map((p,pi)=>`<div class="perm-cell" style="${pi%2===0?'background:#FAFCFF':''}">${p}</div>${roles.map(r=>`<div class="perm-cell perm-${r.vals[pi]==='✓'?'yes':r.vals[pi]==='◐'?'part':'no'}" style="${pi%2===0?'background:#FAFCFF':''}">${r.vals[pi]}</div>`).join('')}`).join('')}
+  </div></div></div>`;
+}
+
+async function renderAdminOrg(){
+  const{data:orgSettings}=await SB.from('profiles').select('id').eq('role','super_admin').limit(1);
+  return`<div style="max-width:560px">
+  <div class="card mb4"><div class="card-hd"><span class="card-title">Organisation Settings</span></div><div class="card-bd">
+    <div class="fg"><label class="fl">Organisation Name</label><input class="fi" id="org-name" placeholder="Acme Corporation"></div>
+    <div class="fg"><label class="fl">Max File Size (MB)</label><input class="fi" type="number" id="org-maxfile" value="25"></div>
+    <button class="btn btn-primary" data-action="save-org">Save</button>
+  </div></div>
+  <div class="card mb4"><div class="card-hd"><span class="card-title">Security Policies</span></div><div class="card-bd">
+    <div class="flex jcb aic mb4"><div><div class="fw6">Enforce MFA for all users</div><div class="text-sm text-mut">Require 2FA on every login</div></div>
+      <label style="cursor:pointer"><input type="checkbox" id="org-mfa"> Enabled</label></div>
+    <div class="flex jcb aic"><div><div class="fw6">Session Timeout (minutes)</div></div><input type="number" class="fi" id="org-timeout" value="30" style="width:80px;text-align:center"></div>
+    <button class="btn btn-primary mt4" data-action="save-security">Save Security Settings</button>
+  </div></div></div>`;
+}
+
+// =====================================================
+// SETTINGS
+// =====================================================
+async function renderSettings(){
+  const p=S.profile||{};
+  const{data:factors=[]}=SB.auth.mfa?await SB.auth.mfa.listFactors():{data:[]};
+  const hasMFA=factors.filter(f=>f.status==='verified').length>0;
+  return`<div class="tabs">
+    <div class="tab${S.settingsTab==='profile'?' active':''}" data-stab="profile">Profile</div>
+    <div class="tab${S.settingsTab==='security'?' active':''}" data-stab="security">Security & MFA</div>
+    <div class="tab${S.settingsTab==='notifications'?' active':''}" data-stab="notifications">Notifications</div>
+    <div class="tab${S.settingsTab==='signature'?' active':''}" data-stab="signature">Saved Signature</div>
+  </div>
+  ${S.settingsTab==='profile'?`<div style="max-width:520px"><div class="card">
+    <div class="card-hd"><span class="card-title">Profile Information</span></div>
+    <div class="card-bd">
+      <div style="display:flex;gap:20px;align-items:center;margin-bottom:24px">
+        ${avatar(p.name||'U',56,p.id||'')}
+        <div><div class="fw7" style="font-size:18px">${esc(p.name||'')}</div><div class="text-sm text-mut">${esc(p.email||'')}</div>${roleBadge(p.role||'user')}</div>
+      </div>
+      <div class="fg"><label class="fl">Full Name</label><input class="fi" id="set-name" value="${esc(p.name||'')}"></div>
+      <div class="fg"><label class="fl">Department</label><input class="fi" id="set-dept" value="${esc(p.dept||'')}"></div>
+      <button class="btn btn-primary" data-action="save-profile">Save Changes</button>
+    </div>
+  </div></div>`:''}
+  ${S.settingsTab==='security'?`<div style="max-width:520px">
+  <div class="card mb4"><div class="card-hd"><span class="card-title">Change Password</span></div><div class="card-bd">
+    <div class="fg"><label class="fl">New Password</label><input class="fi" type="password" id="pw-new" placeholder="Min. 6 chars"></div>
+    <div class="fg"><label class="fl">Confirm Password</label><input class="fi" type="password" id="pw-conf" placeholder="••••••••"></div>
+    <button class="btn btn-primary" data-action="change-pw">Update Password</button>
+  </div></div>
+  <div class="card"><div class="card-hd"><span class="card-title">Two-Factor Authentication (TOTP)</span><span class="badge ${hasMFA?'bg-ok':'bg-gray'}">${hasMFA?'Enabled':'Disabled'}</span></div>
+    <div class="card-bd">
+      <p class="text-sm text-mut mb4">${hasMFA?'MFA is active. You need your authenticator app to sign in.':'Add extra security using Google Authenticator or Authy.'}</p>
+      ${hasMFA?`<button class="btn btn-secondary" data-action="disable-mfa">Disable MFA</button>`:
+      `<button class="btn btn-primary" data-action="enable-mfa">Set Up MFA →</button>`}
+    </div>
+  </div></div>`:''}
+  ${S.settingsTab==='notifications'?`<div style="max-width:520px"><div class="card"><div class="card-hd"><span class="card-title">Email Notifications</span></div><div class="card-bd" style="display:flex;flex-direction:column;gap:20px">
+    ${[['Documents sent to me to sign','signing_invite'],['My documents have been signed','doc_signed'],['Signing reminders','reminder'],['Document completed','completed'],['Signing declined','declined']].map(([lbl,key])=>`
+    <div class="flex jcb aic"><div class="fw6">${lbl}</div>
+      <label style="cursor:pointer"><input type="checkbox" class="notif-pref" data-key="${key}"${(p.notif_prefs||{})[key]!==false?' checked':''}></label></div>`).join('')}
+    <button class="btn btn-primary" data-action="save-notif">Save Preferences</button>
+  </div></div></div>`:''}
+  ${S.settingsTab==='signature'?`<div style="max-width:520px"><div class="card"><div class="card-hd"><span class="card-title">Saved Signature</span></div><div class="card-bd">
+    <p class="text-sm text-mut mb4">Your saved signature is auto-loaded when signing documents.</p>
+    ${p.saved_signature?`<div style="border:1px solid var(--bdr);border-radius:8px;padding:16px;text-align:center;margin-bottom:16px"><img src="${p.saved_signature}" style="max-width:100%;max-height:80px;object-fit:contain"></div>
+    <div class="flex gap3"><button class="btn btn-secondary" data-action="clear-saved-sig">Clear</button><button class="btn btn-primary" data-action="update-saved-sig">Update</button></div>`
+    :`<button class="btn btn-primary" data-action="update-saved-sig">Draw & Save Signature</button>`}
+  </div></div></div>`:''}`;
+}
+
+// =====================================================
+// PDF RENDERING
+// =====================================================
+async function renderPDFPages(arrayBuffer, mode){
+  const pagesEl=document.getElementById(`${mode}-pages`);
+  if(!pagesEl) return;
+  pagesEl.innerHTML='<div style="color:#fff;font-size:13px;padding:40px">Rendering document…</div>';
+  try{
+    const pdf=await pdfjsLib.getDocument({data:new Uint8Array(arrayBuffer)}).promise;
+    const numP=pdf.numPages;
+    if(mode==='sy'){S.syPdf=pdf;S.syPages=numP;}else{S.stoPdf=pdf;S.stoPages=numP;}
+    pagesEl.innerHTML='';
+    for(let p=1;p<=numP;p++){
+      const page=await pdf.getPage(p);
+      const vp=page.getViewport({scale:1.5});
+      const wrap=document.createElement('div');
+      wrap.id=`${mode}-pw-${p}`;wrap.className='page-wrap';wrap.dataset.page=p;
+      wrap.style.cssText=`width:${vp.width}px;height:${vp.height}px;`;
+      const canvas=document.createElement('canvas');
+      canvas.id=`${mode}-pc-${p}`;canvas.width=vp.width;canvas.height=vp.height;canvas.className='page-canvas';
+      wrap.appendChild(canvas);
+      const lbl=document.createElement('div');
+      lbl.style.cssText='position:absolute;bottom:-20px;left:0;right:0;text-align:center;color:rgba(255,255,255,.5);font-size:11px;pointer-events:none';
+      lbl.textContent=`Page ${p} of ${numP}`;
+      wrap.appendChild(lbl);
+      pagesEl.appendChild(wrap);
+      const ctx=canvas.getContext('2d');
+      await page.render({canvasContext:ctx,viewport:vp}).promise;
+      wrap.addEventListener('click',e=>{
+        const placing=mode==='sy'?S.syPlacing:S.stoPlacing;
+        if(!placing) return;
+        const rect=wrap.getBoundingClientRect();
+        const sx=vp.width/rect.width,sy=vp.height/rect.height;
+        const x=(e.clientX-rect.left)*sx,y=(e.clientY-rect.top)*sy;
+        const field={id:genId(),type:placing,page:p,x:x-80,y:y-16,w:placing==='signature'?170:placing==='initials'||placing==='name'?100:placing==='date'?130:140,h:placing==='signature'?44:32,value:null,recipientIdx:mode==='sto'?S.stoActiveRec:0,recipientId:mode==='sto'&&S.stoRecs[S.stoActiveRec]?null:null,required:true};
+        if(mode==='sy'){S.syFields.push(field);S.syPlacing=null;}else{S.stoFields.push(field);S.stoPlacing=null;}
+        document.querySelectorAll('.field-btn').forEach(b=>b.classList.remove('placing'));
+        addFieldOverlay(field,wrap,mode);
+        const hint=document.getElementById(`${mode}-hint`);
+        if(hint) hint.innerHTML='Select a field type from the panel, then click the document.';
+      });
+      const fields=mode==='sy'?S.syFields:S.stoFields;
+      fields.filter(f=>f.page===p).forEach(f=>addFieldOverlay(f,wrap,mode));
+    }
+  }catch(err){
+    console.error('PDF render error:',err);
+    pagesEl.innerHTML=`<div style="color:#FFD700;padding:20px;text-align:center">⚠ Could not render PDF.<br>Try uploading a different file.</div>`;
+  }
+}
+
+function addFieldOverlay(field,wrap,mode){
+  const existing=document.getElementById(`fd-${field.id}`);
+  if(existing) existing.remove();
+  const FC={signature:{c:'#2563EB'},initials:{c:'#7C3AED'},name:{c:'#0891B2'},date:{c:'#059669'},text:{c:'#D97706'}};
+  const fc=FC[field.type]||{c:'#2563EB'};
+  const rc=mode==='sto'?REC_COLORS[(field.recipientIdx||0)%REC_COLORS.length]:fc.c;
+  const el=document.createElement('div');
+  el.id=`fd-${field.id}`;el.className='sig-field';
+  el.style.cssText=`left:${field.x}px;top:${field.y}px;width:${field.w}px;height:${field.h}px;border:2px dashed ${rc};background:${rc}18;color:${rc};font-family:Inter,sans-serif;z-index:10;`;
+  const labels={signature:'✍ Sign',initials:'Initials',name:'Name',date:'📅 Date',text:'Text'};
+  const recName=mode==='sto'&&S.stoRecs[field.recipientIdx]?` (${S.stoRecs[field.recipientIdx].name.split(' ')[0]})`:'';
+  if(field.value){
+    el.style.cssText+=`border-style:solid;border-color:#059669;background:rgba(5,150,105,.08);`;
+    if(field.type==='signature'||field.type==='initials'){el.innerHTML=`<img src="${field.value}" style="max-width:100%;max-height:100%;object-fit:contain">`;}
+    else{el.style.fontSize='12px';el.style.justifyContent='flex-start';el.style.padding='0 6px';el.textContent=field.value;}
+  }else{el.style.fontSize='11px';el.innerHTML=`${labels[field.type]||field.type}${recName}`;}
+  const del=document.createElement('div');del.className='fd-del';del.textContent='×';
+  del.addEventListener('click',e=>{e.stopPropagation();if(mode==='sy')S.syFields=S.syFields.filter(f=>f.id!==field.id);else S.stoFields=S.stoFields.filter(f=>f.id!==field.id);el.remove();});
+  el.appendChild(del);
+  el.addEventListener('click',e=>{if(e.target===del)return;openFillModal(field,mode);});
+  let drag=false,sx,sy,sl,st;
+  el.addEventListener('mousedown',e=>{if(e.target===del)return;drag=true;sx=e.clientX;sy=e.clientY;sl=field.x;st=field.y;e.preventDefault();});
+  document.addEventListener('mousemove',e=>{if(!drag)return;field.x=Math.max(0,sl+(e.clientX-sx));field.y=Math.max(0,st+(e.clientY-sy));el.style.left=field.x+'px';el.style.top=field.y+'px';});
+  document.addEventListener('mouseup',()=>{drag=false;});
+  wrap.appendChild(el);
+}
+
+function openFillModal(field,mode){
+  const isDrawable=field.type==='signature'||field.type==='initials';
+  const savedSig=S.profile?.saved_signature;
+  showModal(`<div class="modal modal-md">
+    <div class="modal-hd"><span class="modal-title">${field.type==='signature'?'Sign Here':field.type==='initials'?'Add Initials':field.type==='name'?'Full Name':field.type==='date'?'Set Date':'Enter Text'}</span>
+    <button class="btn btn-ghost btn-sm" data-action="close-modal">${IC.x}</button></div>
+    <div class="modal-bd">
+    ${isDrawable?`
+      <div class="tabs" id="fill-tabs">
+        <div class="tab active" data-ftab="draw">Draw</div>
+        <div class="tab" data-ftab="type">Type</div>
+        ${savedSig?'<div class="tab" data-ftab="saved">Saved</div>':''}
+      </div>
+      <div id="ftab-draw"><canvas id="draw-canvas" width="500" height="150" style="touch-action:none"></canvas>
+        <div class="flex jcb aic mt2"><span class="text-sm text-mut">Draw ${field.type}</span><button class="btn btn-ghost btn-sm" id="clear-draw">Clear</button></div></div>
+      <div id="ftab-type" class="hidden"><div class="fg"><label class="fl">Type your name</label>
+        <input class="fi" id="type-sig" placeholder="${S.profile?.name||'Your name'}" style="font-family:'Dancing Script',cursive;font-size:26px;height:64px"></div>
+        <p class="fhint">Rendered in cursive</p></div>
+      ${savedSig?`<div id="ftab-saved" class="hidden"><div style="border:1px solid var(--bdr);border-radius:8px;padding:20px;text-align:center"><img src="${savedSig}" style="max-height:80px;object-fit:contain"></div><p class="fhint mt2">Your saved signature</p></div>`:''}`:''}
+    ${field.type==='date'?`<div class="fg"><label class="fl">Date</label><input type="date" class="fi" id="fill-date" value="${new Date().toISOString().slice(0,10)}"></div>`:''}
+    ${field.type==='name'?`<div class="fg"><label class="fl">Full Name</label><input class="fi" id="fill-name" value="${esc(S.profile?.name||'')}"></div>`:''}
+    ${field.type==='text'?`<div class="fg"><label class="fl">Text</label><input class="fi" id="fill-text" placeholder="Enter text…" value="${field.value||''}"></div>`:''}
+    </div>
+    <div class="modal-ft"><button class="btn btn-secondary" data-action="close-modal">Cancel</button><button class="btn btn-primary" id="fill-confirm">Apply</button></div>
+  </div>`);
+
+  if(isDrawable){
+    const canvas=document.getElementById('draw-canvas');
+    const ctx=canvas.getContext('2d');
+    ctx.strokeStyle='#0F172A';ctx.lineWidth=2.5;ctx.lineCap='round';ctx.lineJoin='round';
+    let drawing=false,lx,ly;
+    const pos=e=>{const r=canvas.getBoundingClientRect();return[(e.touches?e.touches[0].clientX:e.clientX-r.left)*(canvas.width/r.width),(e.touches?e.touches[0].clientY:e.clientY-r.top)*(canvas.height/r.height)];};
+    canvas.addEventListener('mousedown',e=>{drawing=true;[lx,ly]=pos(e);ctx.beginPath();ctx.arc(lx,ly,1,0,Math.PI*2);ctx.fill();});
+    canvas.addEventListener('mousemove',e=>{if(!drawing)return;const[x,y]=pos(e);ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(x,y);ctx.stroke();[lx,ly]=[x,y];});
+    canvas.addEventListener('mouseup',()=>drawing=false); canvas.addEventListener('mouseleave',()=>drawing=false);
+    canvas.addEventListener('touchstart',e=>{e.preventDefault();drawing=true;[lx,ly]=pos(e);},{passive:false});
+    canvas.addEventListener('touchmove',e=>{e.preventDefault();if(!drawing)return;const[x,y]=pos(e);ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(x,y);ctx.stroke();[lx,ly]=[x,y];},{passive:false});
+    canvas.addEventListener('touchend',()=>drawing=false);
+    document.getElementById('clear-draw').onclick=()=>ctx.clearRect(0,0,canvas.width,canvas.height);
+    let activeTab='draw';
+    document.querySelectorAll('#fill-tabs .tab').forEach(t=>t.addEventListener('click',()=>{
+      document.querySelectorAll('#fill-tabs .tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');
+      activeTab=t.dataset.ftab;
+      ['draw','type','saved'].forEach(tb=>{const el=document.getElementById(`ftab-${tb}`);if(el)el.classList.toggle('hidden',activeTab!==tb);});
+    }));
+    document.getElementById('fill-confirm').onclick=async()=>{
+      let val;
+      if(activeTab==='draw'){
+        const id=ctx.getImageData(0,0,canvas.width,canvas.height);
+        if(!id.data.some((v,i)=>i%4===3&&v>10)){toast('Draw your '+field.type,'err');return;}
+        val=canvas.toDataURL();
+      }else if(activeTab==='type'){
+        const txt=(document.getElementById('type-sig').value||'').trim();
+        if(!txt){toast('Enter text','err');return;}
+        const oc=document.createElement('canvas');oc.width=field.w*2;oc.height=field.h*2;
+        const oc2=oc.getContext('2d');oc2.font=`${field.h*1.1}px "Dancing Script",cursive`;oc2.fillStyle='#0F172A';oc2.textBaseline='middle';oc2.fillText(txt,4,field.h);val=oc.toDataURL();
+      }else{ val=S.profile?.saved_signature; }
+      if(!val) return;
+      field.value=val;
+      const wrap=document.getElementById(`${mode}-pw-${field.page}`);
+      if(wrap) addFieldOverlay(field,wrap,mode);
+      // Auto-save signature to profile if it's a signature field
+      if(field.type==='signature'&&activeTab==='draw'&&S.user&&!S.profile?.saved_signature){
+        const save=confirm('Save this signature for future use?');
+        if(save){ await SB.from('profiles').update({saved_signature:val}).eq('id',S.user.id); if(S.profile) S.profile.saved_signature=val; }
+      }
+      hideModal();
+    };
+  }else if(field.type==='date'){
+    document.getElementById('fill-confirm').onclick=()=>{
+      const v=document.getElementById('fill-date').value;
+      if(!v){toast('Pick a date','err');return;}
+      field.value=new Date(v).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+      const wrap=document.getElementById(`${mode}-pw-${field.page}`);if(wrap)addFieldOverlay(field,wrap,mode);hideModal();
+    };
+  }else if(field.type==='name'){
+    document.getElementById('fill-confirm').onclick=()=>{
+      const v=(document.getElementById('fill-name').value||'').trim();
+      if(!v){toast('Enter name','err');return;}
+      field.value=v;const wrap=document.getElementById(`${mode}-pw-${field.page}`);if(wrap)addFieldOverlay(field,wrap,mode);hideModal();
+    };
+  }else{
+    document.getElementById('fill-confirm').onclick=()=>{
+      const v=(document.getElementById('fill-text').value||'').trim();
+      if(!v){toast('Enter text','err');return;}
+      field.value=v;const wrap=document.getElementById(`${mode}-pw-${field.page}`);if(wrap)addFieldOverlay(field,wrap,mode);hideModal();
+    };
+  }
+}
+
+// =====================================================
+// FILE UPLOAD TO SUPABASE STORAGE
+// =====================================================
+function setupUploadZone(dropId,inputId,mode){
+  const drop=document.getElementById(dropId),input=document.getElementById(inputId);
+  if(!drop||!input) return;
+  drop.addEventListener('click',()=>input.click());
+  drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('over');});
+  drop.addEventListener('dragleave',()=>drop.classList.remove('over'));
+  drop.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('over');if(e.dataTransfer.files[0])handleFile(e.dataTransfer.files[0],mode);});
+  input.addEventListener('change',()=>{if(input.files[0])handleFile(input.files[0],mode);});
+}
+
+async function handleFile(file, mode){
+  if(file.size>26*1024*1024){toast('File exceeds 25 MB','err');return;}
+  showLoading('Uploading to Supabase…');
+  try{
+    const ext=file.name.split('.').pop().toLowerCase();
+    const path=`${S.user.id}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+    const{error:upErr}=await SB.storage.from('documents').upload(path,file,{contentType:file.type||'application/pdf',upsert:false});
+    if(upErr) throw upErr;
+    // Read ArrayBuffer for PDF rendering
+    const ab=await file.arrayBuffer();
+    PDF_CACHE[mode]=ab;
+    if(mode==='sy'){S.syFile=true;S.syName=file.name;S.syFilePath=path;}
+    else{S.stoFile=true;S.stoName=file.name;S.stoFilePath=path;}
+    hideLoading();toast('Uploaded successfully!','success');render();
+  }catch(e){
+    hideLoading();
+    // Fallback: use in-memory only (if storage bucket not configured)
+    const ab=await file.arrayBuffer();
+    PDF_CACHE[mode]=ab;
+    if(mode==='sy'){S.syFile=true;S.syName=file.name;S.syFilePath=null;}
+    else{S.stoFile=true;S.stoName=file.name;S.stoFilePath=null;}
+    toast('Loaded locally (storage not configured)','info');
+    render();
+  }
+}
+
+// =====================================================
+// DOWNLOAD SIGNED PDF
+// =====================================================
+async function downloadSignedPDF(mode){
+  const fields=mode==='sy'?S.syFields:S.stoFields;
+  const name=(mode==='sy'?S.syName:S.stoName).replace(/\.[^.]+$/,'');
+  if(!PDF_CACHE[mode]){toast('Document not found — re-upload','err');return;}
+  const{jsPDF}=window.jspdf;
+  showModal(`<div class="modal modal-sm"><div class="modal-bd" style="text-align:center;padding:40px">
+    <div style="font-size:40px;margin-bottom:16px">⏳</div>
+    <h3 class="fw7 mb2">Generating Signed PDF…</h3>
+    <p class="text-sm text-mut" id="pdf-prog">Rendering pages…</p>
+  </div></div>`);
+  try{
+    const pdf=await pdfjsLib.getDocument({data:new Uint8Array(PDF_CACHE[mode])}).promise;
+    const numP=pdf.numPages;
+    const doc=new jsPDF({orientation:'portrait',unit:'pt'});
+    const SF=2.0/1.5;
+    let first=true;
+    for(let p=1;p<=numP;p++){
+      const prog=document.getElementById('pdf-prog');
+      if(prog) prog.textContent=`Rendering page ${p} of ${numP}…`;
+      const page=await pdf.getPage(p);
+      const vp=page.getViewport({scale:2.0});
+      const offC=document.createElement('canvas');offC.width=vp.width;offC.height=vp.height;
+      const ctx=offC.getContext('2d');
+      await page.render({canvasContext:ctx,viewport:vp}).promise;
+      for(const f of fields.filter(fi=>fi.page===p&&fi.value)){
+        const fx=f.x*SF,fy=f.y*SF,fw=f.w*SF,fh=f.h*SF;
+        if(f.type==='signature'||f.type==='initials'){
+          const img=new Image();img.src=f.value;
+          await new Promise(r=>{img.onload=r;img.onerror=()=>r();});
+          ctx.drawImage(img,fx,fy,fw,fh);
+        }else{
+          ctx.font=`600 ${Math.round(fh*0.5)}px Inter,sans-serif`;ctx.fillStyle='#0F172A';ctx.textBaseline='middle';
+          ctx.fillText(f.value||'',fx+6,fy+fh/2);
+        }
+      }
+      // Audit stamp
+      const refId=genId().toUpperCase();
+      ctx.font='18px Inter,sans-serif';ctx.fillStyle='rgba(100,116,139,.4)';
+      ctx.fillText(`Signed via SignSoft · ${new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})} · Ref: ${refId}`,14,offC.height-14);
+      const imgData=offC.toDataURL('image/png',.92);
+      const pw=595.28;const ph=pw*(offC.height/offC.width);
+      if(!first)doc.addPage([pw,ph],'p');first=false;
+      doc.addImage(imgData,'PNG',0,0,pw,ph);
+    }
+    doc.save(`${name}_signed.pdf`);
+    hideModal();toast(`✓ "${name}_signed.pdf" downloaded!`,'success');
+    // Save record to Supabase
+    const{data:newDoc,error}=await SB.from('documents').insert({
+      name:`${name}_signed.pdf`,type:'pdf',status:'signed',uploaded_by:S.user.id,
+      file_path:S.syFilePath||null,pages:numP,category:'Signed',
+      signing_fields:JSON.stringify(fields)
+    }).select().single();
+    if(!error&&newDoc){
+      await logAudit(newDoc.id,`Document signed and downloaded (${fields.filter(f=>f.value).length} fields)`);
+    }
+    setTimeout(()=>nav('documents'),1800);
+  }catch(e){ hideModal(); console.error(e); toast('PDF generation error: '+e.message,'err'); }
+}
+
+// =====================================================
+// SEND DOCUMENT TO OTHERS
+// =====================================================
+async function sendDocumentToOthers(){
+  if(S.stoRecs.length===0){toast('Add at least one recipient','err');return;}
+  if(!S.stoRecs.every(r=>r.name&&r.email)){toast('Fill all recipient details','err');return;}
+  showLoading('Creating signing request…');
+  try{
+    // Create document record
+    const{data:doc,error:de}=await SB.from('documents').insert({
+      name:S.stoName,type:'pdf',status:'pending',uploaded_by:S.user.id,
+      file_path:S.stoFilePath||null,pages:S.stoPages||1,category:'Sent',
+      signing_order:S.stoOrder||'sequential',
+      envelope_msg:S.stoMsg||null,envelope_subj:S.stoSubj||null,
+      expires_at:S.stoDeadline?new Date(S.stoDeadline).toISOString():null,
+      signing_fields:JSON.stringify(S.stoFields)
+    }).select().single();
+    if(de) throw de;
+    // Create recipients
+    const recInserts=S.stoRecs.map((r,i)=>({
+      document_id:doc.id,name:r.name,email:r.email,role:r.role||'signer',
+      verify_method:r.verify||'otp',order_index:i,recipient_idx:i,
+      color:REC_COLORS[i%REC_COLORS.length],
+      user_id:S.users?.find(u=>u.email===r.email)?.id||null
+    }));
+    const{data:recs,error:re}=await SB.from('signing_recipients').insert(recInserts).select();
+    if(re) throw re;
+    await logAudit(doc.id,`Document sent for signing (${S.stoRecs.length} recipients)`);
+    // Send invitation emails
+    let emailsSent=0, otpsShown=[];
+    for(const rec of recs){
+      if(rec.role==='cc'){
+        // CC: just notify
+        await sendEmail(rec.email,`You were CC'd on: ${S.stoName}`,`<p>You were copied on a signing request for <b>${esc(S.stoName)}</b>.</p>`,`info`);
+      }else{
+        const result=await sendSigningInvitation(rec.id,rec.name,rec.email,S.stoName,rec.signing_token,S.stoMsg||'');
+        if(result?.success) emailsSent++;
+        else otpsShown.push({name:rec.name,email:rec.email,token:rec.signing_token});
+      }
+      await createNotification(S.user.id,`Invitation sent to ${rec.name}`,`Signing request for "${S.stoName}" has been sent.`,'info',doc.id);
+    }
+    hideLoading();
+    showModal(`<div class="modal modal-lg">
+      <div class="modal-hd"><span class="modal-title">✅ Document Sent!</span><button class="btn btn-ghost btn-sm" data-action="close-modal">${IC.x}</button></div>
+      <div class="modal-bd">
+        ${emailsSent>0?`<div style="padding:12px;background:var(--ok-l);border-radius:8px;margin-bottom:16px">✅ ${emailsSent} invitation email${emailsSent>1?'s':''} sent via Resend.</div>`:''}
+        ${otpsShown.length>0?`<p class="text-sm text-mut mb3">Email not configured — here are the signing links to share manually:</p>`:''}
+        ${recs.filter(r=>r.role!=='cc').map((r,i)=>`
+        <div style="padding:14px;border:1px solid var(--bdr);border-radius:8px;margin-bottom:10px">
+          <div class="flex jcb aic mb2"><b>${esc(r.name)}</b><span class="text-sm text-mut">${esc(r.email)}</span></div>
+          <div style="background:var(--bg);border-radius:6px;padding:10px;font-size:11.5px;word-break:break-all;color:var(--mut);margin-bottom:8px">
+            ${window.location.href.split('?')[0]}?token=${r.signing_token}
+          </div>
+          <button class="btn btn-secondary btn-sm w100" onclick="navigator.clipboard.writeText('${window.location.href.split('?')[0]}?token=${r.signing_token}');this.textContent='Copied!'">Copy Link</button>
+        </div>`).join('')}
+      </div>
+      <div class="modal-ft"><button class="btn btn-primary" data-action="goto-docs">View Documents</button></div>
+    </div>`);
+  }catch(e){ hideLoading(); toast('Error: '+e.message,'err'); console.error(e); }
+}
+
+// =====================================================
+// MFA SETUP
+// =====================================================
+async function setupMFA(){
+  showLoading('Setting up MFA…');
+  try{
+    const{data:{totp:{qr_code,secret,uri}},error}=await SB.auth.mfa.enroll({factorType:'totp',friendlyName:'SignSoft Authenticator'});
+    if(error) throw error;
+    hideLoading();
+    showModal(`<div class="modal modal-sm">
+      <div class="modal-hd"><span class="modal-title">Set Up Authenticator App</span><button class="btn btn-ghost btn-sm" data-action="close-modal">${IC.x}</button></div>
+      <div class="modal-bd">
+        <p class="text-sm text-mut mb4">Scan this QR code with Google Authenticator, Authy, or any TOTP app.</p>
+        <div style="text-align:center;margin-bottom:16px"><img src="${qr_code}" style="width:180px;height:180px;border:4px solid white;border-radius:8px"></div>
+        <div style="font-size:12px;color:var(--mut);text-align:center;margin-bottom:16px">Or enter manually: <code style="background:var(--bg);padding:2px 6px;border-radius:4px">${secret}</code></div>
+        <div class="fg"><label class="fl">Enter the 6-digit code to confirm</label><input class="fi" id="totp-confirm" maxlength="6" placeholder="000000" style="text-align:center;font-size:22px;letter-spacing:6px"></div>
+      </div>
+      <div class="modal-ft"><button class="btn btn-secondary" data-action="close-modal">Cancel</button><button class="btn btn-primary" id="totp-verify-btn">Verify & Enable</button></div>
+    </div>`);
+    document.getElementById('totp-verify-btn').onclick=async()=>{
+      const code=document.getElementById('totp-confirm').value.trim();
+      const{data:{session},error}=await SB.auth.mfa.challengeAndVerify({factorId:totp.id||'',code});
+      if(error){toast(error.message,'err');return;}
+      await SB.from('profiles').update({mfa_enabled:true}).eq('id',S.user.id);
+      if(S.profile) S.profile.mfa_enabled=true;
+      hideModal();toast('MFA enabled!','success');render();
+    };
+  }catch(e){ hideLoading(); toast(e.message,'err'); }
+}
+
+// =====================================================
+// EVENT BINDING
+// =====================================================
+function bindAppEvents(){
+  const app=document.getElementById('app');
+  app.addEventListener('click',handleAppClick);
+  app.addEventListener('change',handleAppChange);
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){
+      if(S.syPlacing){S.syPlacing=null;document.querySelectorAll('.field-btn').forEach(b=>b.classList.remove('placing'));const h=document.getElementById('sy-hint');if(h)h.innerHTML='Select a field type.';}
+      if(S.stoPlacing){S.stoPlacing=null;document.querySelectorAll('.field-btn').forEach(b=>b.classList.remove('placing'));const h=document.getElementById('sto-hint');if(h)h.innerHTML='Select a field type.';}
+    }
+  });
+  if(S.page==='sign-yourself'){
+    if(S.syStep===1) setupUploadZone('sy-drop','sy-file','sy');
+    if(S.syStep===2&&PDF_CACHE['sy']) setTimeout(()=>renderPDFPages(PDF_CACHE['sy'],'sy'),100);
+    if(S.syStep===3){
+      const dlBtn=document.getElementById('sy-dl-btn');
+      if(dlBtn) dlBtn.onclick=()=>downloadSignedPDF('sy');
+    }
+  }
+  if(S.page==='send-to-others'){
+    if(S.stoStep===1) setupUploadZone('sto-drop','sto-file','sto');
+    if(S.stoStep===3&&PDF_CACHE['sto']) setTimeout(()=>renderPDFPages(PDF_CACHE['sto'],'sto'),100);
+  }
+  const ds=document.getElementById('doc-search');
+  if(ds) ds.addEventListener('input',e=>{S.docSearch=e.target.value;render();});
+}
+
+function handleAppClick(e){
+  const nav_el=e.target.closest('[data-nav]');
+  if(nav_el){nav(nav_el.dataset.nav);return;}
+  const action_el=e.target.closest('[data-action]');
+  if(action_el){handleAction(action_el.dataset.action,action_el);return;}
+  const place_el=e.target.closest('[data-place]');
+  if(place_el){
+    const mode=place_el.dataset.mode,type=place_el.dataset.place;
+    if(mode==='sy'){S.syPlacing=S.syPlacing===type?null:type;}else{S.stoPlacing=S.stoPlacing===type?null:type;}
+    document.querySelectorAll('.field-btn').forEach(b=>b.classList.remove('placing'));
+    if((mode==='sy'&&S.syPlacing)||(mode==='sto'&&S.stoPlacing)) place_el.classList.add('placing');
+    const hint=document.getElementById(`${mode}-hint`);
+    const placing=mode==='sy'?S.syPlacing:S.stoPlacing;
+    if(hint) hint.innerHTML=placing?`<b style="color:#60A5FA">Placing: ${placing}</b> — click document · ESC to cancel`:'Select a field type.';
+    return;
+  }
+  const rec_el=e.target.closest('[data-rec]');
+  if(rec_el&&rec_el.dataset.rec!==undefined){S.stoActiveRec=parseInt(rec_el.dataset.rec);document.querySelectorAll('[data-rec]').forEach(b=>b.classList.remove('placing'));rec_el.classList.add('placing');return;}
+  const atab=e.target.closest('[data-atab]');
+  if(atab){S.adminTab=atab.dataset.atab;render();return;}
+  const stab=e.target.closest('[data-stab]');
+  if(stab){S.settingsTab=stab.dataset.stab;render();return;}
+  const filt=e.target.closest('[data-filter]');
+  if(filt){S.docFilter=filt.dataset.filter;render();return;}
+  // Close notif panel if clicking outside
+  if(S.notifOpen&&!e.target.closest('#notif-bell')&&!e.target.closest('.notif-panel')){S.notifOpen=false;render();return;}
+}
+
+function handleAppChange(e){
+  const rf=e.target.closest('[data-rec-field]');
+  if(rf){const i=parseInt(rf.dataset.recI);const f=rf.dataset.recField;if(S.stoRecs[i])S.stoRecs[i][f]=rf.value;}
+  const so=e.target.closest('[name="sig-order"]');
+  if(so)S.stoOrder=so.value;
+}
+
+async function handleAction(action,el){
+  switch(action){
+    case'logout':
+      stopCamera();
+      await SB.auth.signOut();S.user=null;S.profile=null;if(notifChannel){SB.removeChannel(notifChannel);notifChannel=null;}
+      render();break;
+    case'close-modal':hideModal();stopCamera();break;
+    case'goto-docs':hideModal();nav('documents');break;
+    case'toggle-notif':S.notifOpen=!S.notifOpen;render();break;
+    case'mark-all-read':
+      await SB.from('notifications').update({read:true}).eq('user_id',S.user.id);
+      S.unreadCount=0;S.notifOpen=false;render();break;
+    case'read-notif':
+      await SB.from('notifications').update({read:true}).eq('id',el.dataset.id);
+      S.unreadCount=Math.max(0,S.unreadCount-1);updateNotifBell();break;
+    case'export-audit':{
+      const{data:rows=[]}=await SB.from('audit_log').select('*').order('created_at',{ascending:false}).limit(1000);
+      const csv=['Time,Action,Actor,IP,Device'].concat(rows.map(r=>`"${r.created_at}","${r.action}","${r.actor_name}","${r.ip_address}","${(r.device||'').replace(/"/g,'""')}"`)).join('\n');
+      const blob=new Blob([csv],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='audit_log.csv';a.click();break;}
+    case'sy-next':
+      if(S.syStep===1&&!S.syFile){toast('Upload a document first','err');return;}
+      S.syStep++;render();break;
+    case'sy-back':S.syStep=Math.max(1,S.syStep-1);render();break;
+    case'sto-next':
+      if(S.stoStep===1&&!S.stoFile){toast('Upload a document first','err');return;}
+      if(S.stoStep===2){
+        S.stoSubj=document.getElementById('sto-subj')?.value||'';
+        S.stoMsg=document.getElementById('sto-msg')?.value||'';
+        S.stoDeadline=document.getElementById('sto-deadline')?.value||'';
+        if(S.stoRecs.length===0){toast('Add at least one recipient','err');return;}
+      }
+      S.stoStep++;render();break;
+    case'sto-back':S.stoStep=Math.max(1,S.stoStep-1);render();break;
+    case'sto-send':await sendDocumentToOthers();break;
+    case'add-rec':S.stoRecs.push({name:'',email:'',role:'signer',verify:'otp'});render();break;
+    case'del-rec':{const i=parseInt(el.dataset.i);S.stoRecs.splice(i,1);render();break;}
+    case'sign-doc':await quickSignDoc(el.dataset.id);break;
+    case'view-audit':S.auditDocId=el.dataset.id;nav('audit');break;
+    case'del-doc':{
+      if(!confirm('Delete this document?')) return;
+      await SB.from('documents').update({status:'deleted',deleted_at:new Date().toISOString()}).eq('id',el.dataset.id);
+      await logAudit(el.dataset.id,'Document deleted');
+      toast('Document deleted','success');render();break;}
+    case'void-doc':{
+      if(!confirm('Void this document? All recipients will be notified.')) return;
+      await SB.from('documents').update({status:'voided',voided_at:new Date().toISOString(),voided_by:S.user.id}).eq('id',el.dataset.id);
+      await logAudit(el.dataset.id,'Document voided');
+      toast('Document voided','success');render();break;}
+    case'send-reminder':{
+      const doc=S.docs.find(d=>d.id===el.dataset.id);
+      if(!doc) break;
+      const pending=(doc.signing_recipients||[]).filter(r=>r.status==='pending');
+      for(const r of pending){
+        await sendEmail(r.email,`Reminder: Please sign "${doc.name}"`,`<p>Hi <b>${esc(r.name)}</b>,</p><p>This is a reminder to sign <b>${esc(doc.name)}</b>.</p>${doc.expires_at?`<p>Deadline: <b>${fmtDT(doc.expires_at)}</b></p>`:''}`,`warning`);
+      }
+      toast(`Reminder sent to ${pending.length} recipient${pending.length!==1?'s':''}!`,'success');break;}
+    case'view-links':showLinksModal(el.dataset.id);break;
+    case'audit-sel':S.auditDocId=el.dataset.id||null;render();break;
+    case'save-profile':{
+      const n=(document.getElementById('set-name').value||'').trim();
+      const d=(document.getElementById('set-dept').value||'').trim();
+      if(!n){toast('Name required','err');return;}
+      await SB.from('profiles').update({name:n,dept:d}).eq('id',S.user.id);
+      if(S.profile){S.profile.name=n;S.profile.dept=d;}
+      toast('Profile updated','success');render();break;}
+    case'change-pw':{
+      const nw=(document.getElementById('pw-new').value||'');
+      const cf=(document.getElementById('pw-conf').value||'');
+      if(nw.length<6){toast('Min 6 characters','err');return;}
+      if(nw!==cf){toast('Passwords do not match','err');return;}
+      const{error}=await SB.auth.updateUser({password:nw});
+      if(error){toast(error.message,'err');return;}
+      toast('Password updated','success');break;}
+    case'enable-mfa':await setupMFA();break;
+    case'disable-mfa':{
+      const{data:{totp:factors}}=await SB.auth.mfa.listFactors();
+      if(factors?.length>0){ await SB.auth.mfa.unenroll({factorId:factors[0].id}); }
+      await SB.from('profiles').update({mfa_enabled:false}).eq('id',S.user.id);
+      if(S.profile) S.profile.mfa_enabled=false;
+      toast('MFA disabled','success');render();break;}
+    case'save-notif':{
+      const prefs={};
+      document.querySelectorAll('.notif-pref').forEach(cb=>{prefs[cb.dataset.key]=cb.checked;});
+      await SB.from('profiles').update({notif_prefs:prefs}).eq('id',S.user.id);
+      if(S.profile) S.profile.notif_prefs=prefs;
+      toast('Notification preferences saved','success');break;}
+    case'update-saved-sig':showSaveSignatureModal();break;
+    case'clear-saved-sig':{
+      await SB.from('profiles').update({saved_signature:null}).eq('id',S.user.id);
+      if(S.profile) S.profile.saved_signature=null;
+      toast('Signature cleared','success');render();break;}
+    case'invite-user':showInviteModal();break;
+    case'edit-user':showEditUserModal(el.dataset.id);break;
+    case'save-org':toast('Organisation settings saved (demo)','success');break;
+    case'save-security':toast('Security settings saved (demo)','success');break;
+    case'add-delegate':showAddDelegateModal();break;
+    case'revoke-del':{
+      await SB.from('delegations').update({status:'revoked'}).eq('id',el.dataset.id);
+      await logAudit(null,'Delegation revoked');
+      toast('Delegation revoked','success');nav('delegate');break;}
+    case'approve-del':{
+      await SB.from('delegations').update({status:'active',approved_by:S.user.id,approved_at:new Date().toISOString()}).eq('id',el.dataset.id);
+      toast('Delegation approved!','success');nav('delegate');break;}
+    case'reject-del':{
+      await SB.from('delegations').update({status:'revoked'}).eq('id',el.dataset.id);
+      toast('Delegation rejected','success');nav('delegate');break;}
+  }
+}
+
+// =====================================================
+// QUICK SIGN (from dashboard)
+// =====================================================
+async function quickSignDoc(docId){
+  const doc=S.docs.find(d=>d.id===docId);if(!doc) return;
+  showModal(`<div class="modal modal-sm">
+    <div class="modal-hd"><span class="modal-title">Sign: ${esc(doc.name)}</span><button class="btn btn-ghost btn-sm" data-action="close-modal">${IC.x}</button></div>
+    <div class="modal-bd">
+      <p class="text-sm text-mut mb4">By clicking Sign, you confirm your identity and agree to the document.</p>
+      <div class="fg"><label class="fl">Draw Your Signature</label>
+        <canvas id="quick-sig" width="380" height="120" style="border:1px solid var(--bdr);border-radius:6px;background:#fff;cursor:crosshair;display:block;width:100%;touch-action:none"></canvas>
+        <button class="btn btn-ghost btn-sm mt2" id="qs-clear">Clear</button></div>
+    </div>
+    <div class="modal-ft"><button class="btn btn-secondary" data-action="close-modal">Cancel</button>
+    <button class="btn btn-success" id="qs-sign">✓ Sign Document</button></div>
+  </div>`);
+  const qc=document.getElementById('quick-sig');
+  const qCtx=qc.getContext('2d');qCtx.strokeStyle='#0F172A';qCtx.lineWidth=2.5;qCtx.lineCap='round';
+  let qd=false,qlx,qly;
+  const qp=e=>{const r=qc.getBoundingClientRect();return[(e.clientX-r.left)*(qc.width/r.width),(e.clientY-r.top)*(qc.height/r.height)];};
+  qc.addEventListener('mousedown',e=>{qd=true;[qlx,qly]=qp(e);});
+  qc.addEventListener('mousemove',e=>{if(!qd)return;const[x,y]=qp(e);qCtx.beginPath();qCtx.moveTo(qlx,qly);qCtx.lineTo(x,y);qCtx.stroke();[qlx,qly]=[x,y];});
+  qc.addEventListener('mouseup',()=>qd=false);
+  document.getElementById('qs-clear').onclick=()=>qCtx.clearRect(0,0,qc.width,qc.height);
+  document.getElementById('qs-sign').onclick=async()=>{
+    const id=qCtx.getImageData(0,0,qc.width,qc.height);
+    if(!id.data.some((v,i)=>i%4===3&&v>10)){toast('Draw signature first','err');return;}
+    showLoading('Signing…');
+    const sigData=qc.toDataURL();
+    // Update recipient status
+    await SB.from('signing_recipients').update({status:'signed',signed_at:new Date().toISOString()}).eq('document_id',docId).eq('user_id',S.user.id);
+    await logAudit(docId,`Signed by ${S.profile?.name||S.user.email}`);
+    // Check if all signed
+    const{data:recs=[]}=await SB.from('signing_recipients').select('status,role').eq('document_id',docId);
+    const allDone=recs.filter(r=>r.role==='signer').every(r=>r.status==='signed');
+    if(allDone){
+      await SB.from('documents').update({status:'completed',updated_at:new Date().toISOString()}).eq('id',docId);
+      await logAudit(docId,'All parties signed — document completed');
+      const uploader=S.docs.find(d=>d.id===docId)?.uploaded_by;
+      if(uploader&&uploader!==S.user.id){
+        const{data:up}=await SB.from('profiles').select('name,email').eq('id',uploader).single();
+        if(up) await sendCompletionEmail(up.email,up.name,doc.name,recs.filter(r=>r.role==='signer').length);
+      }
+    }else{
+      await SB.from('documents').update({updated_at:new Date().toISOString()}).eq('id',docId);
+    }
+    hideLoading();hideModal();toast('✓ Document signed!','success');render();
+  };
+}
+
+// =====================================================
+// MISC MODALS
+// =====================================================
+async function showLinksModal(docId){
+  const doc=S.docs.find(d=>d.id===docId);if(!doc) return;
+  const recs=doc.signing_recipients||[];
+  showModal(`<div class="modal modal-md">
+    <div class="modal-hd"><span class="modal-title">Signing Links — ${esc(doc.name)}</span><button class="btn btn-ghost btn-sm" data-action="close-modal">${IC.x}</button></div>
+    <div class="modal-bd">
+      ${recs.map(r=>`<div style="padding:14px;border:1px solid var(--bdr);border-radius:8px;margin-bottom:10px">
+        <div class="flex jcb aic mb2">${avatar(r.name,26,r.id)}<b style="flex:1;margin-left:8px">${esc(r.name)}</b>${statusBadge(r.status)}</div>
+        <div class="text-sm text-mut mb2">${esc(r.email)} · ${r.verify_method==='otp_ocr'?'OTP + Face ID':r.verify_method==='otp'?'Email OTP':'No verification'}</div>
+        ${r.status==='pending'?`<div style="background:var(--bg);border-radius:6px;padding:8px;font-size:11px;word-break:break-all;margin-bottom:8px">${window.location.href.split('?')[0]}?token=${r.signing_token}</div>
+        <button class="btn btn-secondary btn-sm" onclick="navigator.clipboard.writeText('${window.location.href.split('?')[0]}?token=${r.signing_token}');this.textContent='Copied!'">Copy Link</button>`
+        :`<div style="color:var(--ok);font-size:13px">${IC.check} Signed on ${fmtDT(r.signed_at)}</div>`}
+      </div>`).join('')}
+    </div>
+    <div class="modal-ft"><button class="btn btn-primary" data-action="close-modal">Close</button></div>
+  </div>`);
+}
+
+function showInviteModal(){
+  showModal(`<div class="modal modal-sm">
+    <div class="modal-hd"><span class="modal-title">Invite User</span><button class="btn btn-ghost btn-sm" data-action="close-modal">${IC.x}</button></div>
+    <div class="modal-bd">
+      <div class="fg"><label class="fl">Full Name</label><input class="fi" id="inv-name" placeholder="Jane Smith"></div>
+      <div class="fg"><label class="fl">Email</label><input class="fi" type="email" id="inv-email" placeholder="jane@company.com"></div>
+      <div class="fg"><label class="fl">Department</label><input class="fi" id="inv-dept" placeholder="Legal"></div>
+      <div class="fg"><label class="fl">Role</label><select class="fi" id="inv-role">
+        ${['user','manager','org_admin','read_only'].map(r=>`<option value="${r}">${r.replace('_',' ')}</option>`).join('')}
+      </select></div>
+      <p class="fhint">An invitation email will be sent. The user sets their own password.</p>
+    </div>
+    <div class="modal-ft"><button class="btn btn-secondary" data-action="close-modal">Cancel</button><button class="btn btn-primary" id="inv-save">Send Invitation</button></div>
+  </div>`);
+  document.getElementById('inv-save').onclick=async()=>{
+    const name=(document.getElementById('inv-name').value||'').trim();
+    const email=(document.getElementById('inv-email').value||'').trim();
+    const dept=(document.getElementById('inv-dept').value||'').trim();
+    const role=document.getElementById('inv-role').value;
+    if(!name||!email){toast('Name and email required','err');return;}
+    showLoading('Sending invitation…');
+    try{
+      const{data,error}=await SB.auth.admin.inviteUserByEmail(email,{data:{name,dept,role}});
+      if(error) throw error;
+      hideLoading();hideModal();toast(`Invitation sent to ${name}!`,'success');
+    }catch(e){
+      hideLoading();
+      // Fallback: signUp without email confirmation
+      try{
+        const tempPw='Welcome@123!';
+        const{error:e2}=await SB.auth.signUp({email,password:tempPw,options:{data:{name,dept,role}}});
+        if(e2) throw e2;
+        hideLoading();hideModal();toast(`User ${name} created (temp password: Welcome@123!)','success');render();
+      }catch(e3){ hideLoading(); toast('Error: '+e3.message,'err'); }
+    }
+  };
+}
+
+function showEditUserModal(uid){
+  const u=S.allUsers?.find(x=>x.id===uid);if(!u) return;
+  showModal(`<div class="modal modal-sm">
+    <div class="modal-hd"><span class="modal-title">Edit User</span><button class="btn btn-ghost btn-sm" data-action="close-modal">${IC.x}</button></div>
+    <div class="modal-bd">
+      <div class="fg"><label class="fl">Name</label><input class="fi" id="eu-name" value="${esc(u.name)}"></div>
+      <div class="fg"><label class="fl">Department</label><input class="fi" id="eu-dept" value="${esc(u.dept||'')}"></div>
+      <div class="fg"><label class="fl">Role</label><select class="fi" id="eu-role">${['user','manager','org_admin','read_only','super_admin'].map(r=>`<option value="${r}"${u.role===r?' selected':''}>${r.replace('_',' ')}</option>`).join('')}</select></div>
+      <div class="fg"><label class="fl">Status</label><select class="fi" id="eu-status">${['active','inactive','suspended'].map(r=>`<option value="${r}"${u.status===r?' selected':''}>${r}</option>`).join('')}</select></div>
+    </div>
+    <div class="modal-ft"><button class="btn btn-secondary" data-action="close-modal">Cancel</button><button class="btn btn-primary" id="eu-save">Save</button></div>
+  </div>`);
+  document.getElementById('eu-save').onclick=async()=>{
+    const n=document.getElementById('eu-name').value.trim();
+    const dept=document.getElementById('eu-dept').value.trim();
+    const role=document.getElementById('eu-role').value;
+    const status=document.getElementById('eu-status').value;
+    const{error}=await SB.from('profiles').update({name:n,dept,role,status}).eq('id',uid);
+    if(error){toast(error.message,'err');return;}
+    hideModal();toast('User updated','success');render();
+  };
+}
+
+function showSaveSignatureModal(){
+  showModal(`<div class="modal modal-md">
+    <div class="modal-hd"><span class="modal-title">Draw & Save Signature</span><button class="btn btn-ghost btn-sm" data-action="close-modal">${IC.x}</button></div>
+    <div class="modal-bd">
+      <p class="text-sm text-mut mb3">This signature will be available for quick use on all documents.</p>
+      <canvas id="draw-canvas" width="500" height="150" style="touch-action:none"></canvas>
+      <button class="btn btn-ghost btn-sm mt2" id="clear-draw">Clear</button>
+    </div>
+    <div class="modal-ft"><button class="btn btn-secondary" data-action="close-modal">Cancel</button><button class="btn btn-primary" id="save-sig-btn">Save Signature</button></div>
+  </div>`);
+  const canvas=document.getElementById('draw-canvas');
+  const ctx=canvas.getContext('2d');ctx.strokeStyle='#0F172A';ctx.lineWidth=2.5;ctx.lineCap='round';
+  let drawing=false,lx,ly;
+  const pos=e=>{const r=canvas.getBoundingClientRect();return[(e.touches?e.touches[0].clientX:e.clientX-r.left)*(canvas.width/r.width),(e.touches?e.touches[0].clientY:e.clientY-r.top)*(canvas.height/r.height)];};
+  canvas.addEventListener('mousedown',e=>{drawing=true;[lx,ly]=pos(e);});
+  canvas.addEventListener('mousemove',e=>{if(!drawing)return;const[x,y]=pos(e);ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(x,y);ctx.stroke();[lx,ly]=[x,y];});
+  canvas.addEventListener('mouseup',()=>drawing=false);
+  document.getElementById('clear-draw').onclick=()=>ctx.clearRect(0,0,canvas.width,canvas.height);
+  document.getElementById('save-sig-btn').onclick=async()=>{
+    const id=ctx.getImageData(0,0,canvas.width,canvas.height);
+    if(!id.data.some((v,i)=>i%4===3&&v>10)){toast('Draw your signature first','err');return;}
+    const val=canvas.toDataURL();
+    await SB.from('profiles').update({saved_signature:val}).eq('id',S.user.id);
+    if(S.profile) S.profile.saved_signature=val;
+    hideModal();toast('Signature saved!','success');render();
+  };
+}
+
+// =====================================================
+// MODAL EVENT DELEGATION
+// =====================================================
+document.getElementById('modal-ct').addEventListener('click',e=>{
+  const nav_el=e.target.closest('[data-nav]');
+  if(nav_el){hideModal();nav(nav_el.dataset.nav);return;}
+  const action_el=e.target.closest('[data-action]');
+  if(action_el){handleAction(action_el.dataset.action,action_el);return;}
+});
+
+// =====================================================
+// INIT
+// =====================================================
+(async()=>{
+  // Check for pre-configured credentials (from config.js)
+  if(window.SIGNSOFT_CONFIG?.supabaseUrl&&window.SIGNSOFT_CONFIG?.supabaseKey){
+    saveConfig(window.SIGNSOFT_CONFIG);
+  }
+  const cfg=loadConfig();
+  if(cfg?.supabaseUrl&&cfg?.supabaseKey) initSupabase(cfg.supabaseUrl,cfg.supabaseKey);
+  if(SB){
+    const{data:{session}}=await SB.auth.getSession();
+    if(session){ S.user=session.user; await loadProfile(); }
+    SB.auth.onAuthStateChange((_,session)=>{ S.user=session?.user||null; });
+  }
+  render();
+})();
+</script>
+</body>
+</html>
